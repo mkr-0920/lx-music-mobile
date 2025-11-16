@@ -66,3 +66,5 @@ buck-out/
 
 # testing
 /coverage
+
+src/utils/musicSdk/mkr/config.js
