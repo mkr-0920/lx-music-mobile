@@ -5,7 +5,8 @@ import wy from './wy'
 import mg from './mg'
 // import bd from './bd'
 import xm from './xm'
-import { supportQuality } from './api-source'
+import mkr from './mkr'
+import { apis, supportQuality } from './api-source'
 
 
 const sources = {
@@ -30,6 +31,10 @@ const sources = {
       name: '咪咕音乐',
       id: 'mg',
     },
+    {
+      name: '我的音乐',
+      id: 'mkr',
+    },
     // {
     //   name: '百度音乐',
     //   id: 'bd',
@@ -42,6 +47,7 @@ const sources = {
   mg,
   // bd,
   xm,
+  mkr,
 }
 export default {
   ...sources,
@@ -64,7 +70,18 @@ export const searchMusic = async({ name, singer, source: s, limit = 25 }) => {
   const tasks = []
   const excludeSource = ['xm']
   for (const source of sources.sources) {
-    if (!sources[source.id].musicSearch || source.id == s || excludeSource.includes(source.id)) continue
+    let api
+    try {
+      // apis(source.id) 会返回 global.lx.apis[source.id]
+      api = apis(source.id)
+    } catch (e) { /* 'api' 保持 undefined, 意味着脚本不存在 */ }
+    if (!sources[source.id].musicSearch || // 1. 内置源没搜索
+        source.id == s || // 2. 播放失败的源
+        excludeSource.includes(source.id) || // 3. 排除源
+        // 4. 动态检查 api 变量
+        !api?.getMusicUrl
+    ) continue
+    console.log('source.id', source.id)
     tasks.push(sources[source.id].musicSearch.search(`${musicName} ${singer || ''}`.trim(), 1, limit).catch(_ => null))
   }
   return (await Promise.all(tasks)).filter(s => s)

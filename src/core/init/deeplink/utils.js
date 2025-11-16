@@ -7,12 +7,12 @@ export const errorDialog = message => {
   })
 }
 
-export const sources = ['kw', 'kg', 'tx', 'wy', 'mg']
+export const sources = ['kw', 'kg', 'tx', 'wy', 'mg', 'mkr']
 export const sourceVerify = source => {
   if (!sources.includes(source)) throw new Error('Source no match')
 }
 
-export const qualitys = ['128k', '320k', 'flac', 'flac24bit']
+export const qualitys = ['128k', '320k', 'flac', 'flac24bit', 'master']
 export const qualityFilter = (source, types) => {
   types = types.filter(({ type }) => qualitys.includes(type)).map(({ type, size, hash }) => {
     if (size != null && typeof size != 'string') throw new Error(type + ' size type no match')

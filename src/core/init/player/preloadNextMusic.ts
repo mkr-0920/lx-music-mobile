@@ -55,7 +55,8 @@ export default () => {
 
   const handlePlayProgressChanged: typeof global.state_event.playProgressChanged = (progress) => {
     const duration = progress.maxPlayTime
-    if (duration > 10 && duration - progress.nowPlayTime < 10 && !preloadMusicInfo.info) {
+    // 提前加载下一首歌曲的时间
+    if (duration > 20 && duration - progress.nowPlayTime < 20 && !preloadMusicInfo.info) {
       void preloadNextMusicUrl(progress.nowPlayTime)
     }
   }
