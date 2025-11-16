@@ -133,7 +133,7 @@ const handleRequestData = async(url, {
       headers['Content-Type'] = 'application/json'
     }
   }
-  if (headers['Content-Type'] === 'application/json' && options.body) {
+  if (headers['Content-Type']?.startsWith('application/json') && options.body) {
     options.body = JSON.stringify(options.body)
   }
   if (headers[bHh]) {
@@ -166,7 +166,7 @@ const blobToBuffer = (blob) => {
   })
 }
 
-const fetchData = (url, { timeout = 15000, ...options }) => {
+const fetchData = (url, { timeout = 15000, credentials = 'omit', ...options }) => {
   console.log('---start---', url)
 
   const controller = new global.AbortController()
@@ -174,14 +174,16 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
     id = null
     controller.abort()
   }, timeout)
-
   return {
-    request: handleRequestData(url, options).then(options => {
+    request: handleRequestData(url, options).then(processedOptions => {
+      // 2. 将 'credentials' 选项传递给 fetch
       return global.fetch(url, {
-        ...options,
+        ...processedOptions,
+        credentials, // <-- 'eapiRequest' 将会设置这个
         signal: controller.signal,
-      }).then(resp => (options.binary ? resp.blob() : resp.text()).then(text => {
-        // console.log(options, headers, text)
+      })
+    })
+      .then(resp => (options.binary ? resp.blob() : resp.text()).then(text => {
         return {
           headers: resp.headers.map,
           body: text,
@@ -190,7 +192,8 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
           url: resp.url,
           ok: resp.ok,
         }
-      })).then(resp => {
+      }))
+      .then(resp => {
         if (options.binary) {
           return blobToBuffer(resp.body).then(buffer => {
             resp.body = buffer
@@ -202,14 +205,14 @@ const fetchData = (url, { timeout = 15000, ...options }) => {
           } catch {}
           return resp
         }
-      }).catch(err => {
-        // console.log(err, err.code, err.message)
+      })
+      .catch(err => {
         return Promise.reject(err)
-      }).finally(() => {
+      })
+      .finally(() => {
         if (id == null) return
         BackgroundTimer.clearTimeout(id)
-      })
-    }),
+      }),
     abort() {
       controller.abort()
     },
