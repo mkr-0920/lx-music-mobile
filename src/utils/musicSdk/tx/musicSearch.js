@@ -3,58 +3,73 @@ import { formatPlayTime, sizeFormate } from '../../index'
 import { formatSingerName } from '../utils'
 
 export default {
-  limit: 50,
+  limit: 30,
   total: 0,
   page: 0,
   allPage: 1,
   successCode: 0,
+  // musicSearch 函数负责发起 HTTP 请求
   musicSearch(str, page, limit, retryNum = 0) {
     if (retryNum > 5) return Promise.reject(new Error('搜索失败'))
-    // searchRequest = httpFetch(`https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=sizer.yqq.song_next&searchid=49252838123499591&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=${page}&n=${limit}&w=${encodeURIComponent(str)}&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq&needNewCode=0`)
-    // const searchRequest = httpFetch(`https://shc.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&remoteplace=txt.yqq.top&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=${page}&n=${limit}&w=${encodeURIComponent(str)}&cv=4747474&ct=24&format=json&inCharset=utf-8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0&uin=0&hostUin=0&loginUin=0`)
+
+    // 使用 httpFetch 发送 POST 请求
     const searchRequest = httpFetch('https://u.y.qq.com/cgi-bin/musicu.fcg', {
       method: 'post',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
+        // 新接口
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        'Content-Type': 'application/json;charset=utf-8',
+        Accept: 'application/json, text/plain, */*',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
       },
       body: {
+        // comm 模块, "cv":"1859" 和 "uin":"0" 是免 cookie 的关键
         comm: {
-          ct: 11,
-          cv: '1003006',
-          v: '1003006',
-          os_ver: '12',
-          phonetype: '0',
-          devicelevel: '31',
-          tmeAppID: 'qqmusiclight',
-          nettype: 'NETWORK_WIFI',
+          ct: '19',
+          cv: '1859',
+          uin: '0', // uin 为 0, 表示游客身份
         },
         req: {
           module: 'music.search.SearchCgiService',
-          method: 'DoSearchForQQMusicLite',
+          // 调用的方法改为 DoSearchForQQMusicDesktop
+          method: 'DoSearchForQQMusicDesktop',
+          // param 传入搜索参数
           param: {
-            query: str,
-            search_type: 0,
-            num_per_page: limit,
-            page_num: page,
-            nqc_flag: 0,
             grp: 1,
+            // 搜索关键词
+            query: str,
+            // 搜索类型: 0 为歌曲
+            search_type: 0,
+            // 每页返回的结果数量
+            num_per_page: limit,
+            // 页面序号
+            page_num: page,
           },
         },
       },
     })
-    // searchRequest = httpFetch(`http://ioscdn.kugou.com/api/v3/search/song?keyword=${encodeURIComponent(str)}&page=${page}&pagesize=${this.limit}&showtype=10&plat=2&version=7910&tag=1&correct=1&privilege=1&sver=5`)
+
+    // 处理请求的 Promise
     return searchRequest.promise.then(({ body }) => {
+      console.log(body)
       // console.log(body)
+      // 检查返回码，如果失败则重试
       if (body.code != this.successCode || body.req.code != this.successCode) return this.musicSearch(str, page, limit, ++retryNum)
+      // 成功则返回 req.data, 里面包含了 body 和 meta
       return body.req.data
     })
   },
+  // handleResult 函数负责格式化原始数据
   handleResult(rawList) {
     // console.log(rawList)
     const list = []
     rawList.forEach(item => {
+      // 过滤掉没有 media_mid 的无效歌曲
       if (!item.file?.media_mid) return
 
+      // 处理音质、文件大小的逻辑
       let types = []
       let _types = {}
       const file = item.file
@@ -86,13 +101,22 @@ export default {
           size,
         }
       }
-      // types.reverse()
+      if (file.size_new && file.size_new[0] !== 0) {
+        let size = sizeFormate(file.size_new[0])
+        types.push({ type: 'master', size })
+        _types.master = {
+          size,
+        }
+      }
+      // 处理专辑、歌手名的逻辑不变
       let albumId = ''
       let albumName = ''
       if (item.album) {
         albumName = item.album.name
         albumId = item.album.mid
       }
+
+      // 组装成标准音乐对象, 逻辑不变
       list.push({
         singer: formatSingerName(item.singer, 'name'),
         name: item.name + (item.title_extra ?? ''),
@@ -115,12 +139,17 @@ export default {
     // console.log(list)
     return list
   },
+  // search 是最终导出的搜索方法
   search(str, page = 1, limit) {
     if (limit == null) limit = this.limit
-    // http://newlyric.kuwo.cn/newlyric.lrc?62355680
+    // 调用 musicSearch 获取数据
     return this.musicSearch(str, page, limit).then(({ body, meta }) => {
-      let list = this.handleResult(body.item_song)
-
+      // 旧接口的歌曲列表路径是 body.item_song
+      // let list = this.handleResult(body.item_song)
+      //
+      // 新接口(DoSearchForQQMusicDesktop)的歌曲列表路径是 body.song.list
+      let list = this.handleResult(body.song.list)
+      // 处理分页和总数
       this.total = meta.estimate_sum
       this.page = page
       this.allPage = Math.ceil(this.total / limit)
