@@ -15,7 +15,7 @@ export default {
       needCorrect: 'true',
       channel: 'typing',
       e_r: true,
-    })
+    }, 'pc')
     // // 返回解密后的 body
     return searchRequest.promise.then(({ body }) => body)
   },
@@ -62,7 +62,7 @@ export default {
       // 检查新音质 (jymaster, sky, jyeffect)
       const maxBrLevel = item.privilege?.maxBrLevel
       if (maxBrLevel === 'jymaster') {
-        console.log('添加jymaster音质')
+        // console.log('添加jymaster音质')
         types.push({ type: 'master', size: null })
         _types.master = { size: null }
       } else if (maxBrLevel === 'sky') {
