@@ -7,7 +7,7 @@ import ListImportExport, { type ListImportExportType } from './ListImportExport'
 import { handleRemove, handleSync } from './listAction'
 import ListMusicSort, { type ListMusicSortType } from './ListMusicSort'
 import DuplicateMusic, { type DuplicateMusicType } from './DuplicateMusic'
-
+import syncListToCloud from '@/core/syncListToCloud'
 
 export default () => {
   const [visible, setVisible] = useState(false)
@@ -52,6 +52,8 @@ export default () => {
             onExport={(info, position) => listImportExportRef.current?.export(info, position)}
             onRemove={info => { handleRemove(info) }}
             onSync={info => { handleSync(info) }}
+            // 当菜单点击 "同步至云端" 时，调用 syncListToCloud
+            onSyncToCloud={info => { void syncListToCloud(info) }}
             onSelectLocalFile={(info, position) => listImportExportRef.current?.selectFile(info, position)}
           />
           {/* <ImportExport actionType={actionType} visible={isShowChoosePath} hide={() => setShowChoosePath(false)} selectedListRef={selectedListRef} /> */}

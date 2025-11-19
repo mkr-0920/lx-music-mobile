@@ -26,6 +26,7 @@ export interface ListMenuProps {
   onImport: (listInfo: LX.List.MyListInfo, index: number) => void
   onExport: (listInfo: LX.List.MyListInfo, index: number) => void
   onSync: (listInfo: LX.List.UserListInfo) => void
+  onSyncToCloud: (listInfo: LX.List.UserListInfo) => void
   onSelectLocalFile: (listInfo: LX.List.MyListInfo, index: number) => void
   onRemove: (listInfo: LX.List.UserListInfo) => void
 }
@@ -45,6 +46,7 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
   onImport,
   onExport,
   onSync,
+  onSyncToCloud,
   onSelectLocalFile,
   onRemove,
 }, ref) => {
@@ -71,6 +73,7 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
   const handleSetMenu = (listInfo: LX.List.MyListInfo) => {
     let rename = false
     let sync = false
+    let sync_to_cloud = false
     let remove = false
     let local_file = !listState.fetchingListStatus[listInfo.id]
     let userList: LX.List.UserListInfo
@@ -83,6 +86,10 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
         rename = true
         remove = true
         sync = !!(userList.source && musicSdk[userList.source]?.songList)
+        sync_to_cloud = !!(
+          userList.source === 'wy' &&
+          userList.sourceListId
+        )
         break
     }
 
@@ -93,6 +100,7 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
       { action: 'duplicateMusic', label: t('lists__duplicate') },
       { action: 'local_file', disabled: !local_file, label: t('list_select_local_file') },
       { action: 'sync', disabled: !sync || !local_file, label: t('list_sync') },
+      { action: 'sync_to_cloud', disabled: !sync_to_cloud || !local_file, label: t('list_sync_to_cloud') },
       { action: 'import', label: t('list_import') },
       { action: 'export', label: t('list_export') },
       // { action: 'changePosition', label: t('change_position') },
@@ -123,6 +131,9 @@ export default forwardRef<ListMenuType, ListMenuProps>(({
         break
       case 'sync':
         onSync(selectInfo.listInfo as LX.List.UserListInfo)
+        break
+      case 'sync_to_cloud':
+        onSyncToCloud(selectInfo.listInfo as LX.List.UserListInfo)
         break
         // case 'changePosition':
 
