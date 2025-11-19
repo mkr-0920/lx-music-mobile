@@ -48,3 +48,32 @@ export const get = (path, params = {}) => {
     return Promise.reject(err)
   })
 }
+
+export const post = (path, data = {}) => {
+  const url = new URL(BASE_URL + path)
+
+  const options = {
+    method: 'POST',
+    headers: {
+      'X-API-Key': API_KEY,
+      'Content-Type': 'application/json',
+    },
+    // request.js 会自动 stringify 它 (因为 json: true)
+    body: data,
+  }
+  console.log('options: ', options)
+  const requestObj = httpFetch(url.toString(), options)
+
+  return requestObj.promise.then(resp => {
+    // 假设 request.js 已经 JSON.parse(resp.body)
+    if (resp.body.code !== 200) {
+      throw new Error(resp.body.message || 'API 请求失败')
+    } else {
+      // API 成功, 返回 data 字段
+      return resp.body.data
+    }
+  }).catch(err => {
+    // httpFetch 内部的 catch 会处理 ETIMEDOUT 等
+    return Promise.reject(err)
+  })
+}
