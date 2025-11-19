@@ -74,7 +74,7 @@ const search = async(query, page = 1, limit = 30) => {
     limit,
     offset,
   }
-  const responseData = await get('/search', params)
+  const responseData = await get('/local/search', params)
 
   // 3. 从 'responseData.songs' 获取列表
   const list = responseData.songs.map(formatSongInfo)

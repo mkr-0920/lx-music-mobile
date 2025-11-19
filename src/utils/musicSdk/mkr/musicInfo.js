@@ -8,14 +8,14 @@ export const getPlayInfo = async(songmid) => {
   if (!songmid) return Promise.reject(new Error('歌曲 ID 无效'))
 
   console.log('[MyMusic] 正在为 songmid: ' + songmid + ' 调用 /play_info')
-  const promise = get('/play_info/' + songmid)
+  const promise = get('/local/play_info/' + songmid)
 
   promise.then(
     (data) => {
-      console.log('[MyMusic] /play_info/' + songmid + ' 成功返回:', data)
+      console.log('[MyMusic] /local/play_info/' + songmid + ' 成功返回:', data)
     },
     (err) => {
-      console.error('[MyMusic] /play_info/' + songmid + ' 失败:', err)
+      console.error('[MyMusic] /local/play_info/' + songmid + ' 失败:', err)
     },
   )
   return promise
