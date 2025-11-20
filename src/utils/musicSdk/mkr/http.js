@@ -61,7 +61,6 @@ export const post = (path, data = {}) => {
     // request.js 会自动 stringify 它 (因为 json: true)
     body: data,
   }
-  console.log('options: ', options)
   const requestObj = httpFetch(url.toString(), options)
 
   return requestObj.promise.then(resp => {

@@ -75,11 +75,11 @@ export const eapiRequest = (url, data, clientType = 'pc') => {
         return innerRequestObj.promise.then(({ body }) => {
           const encryptedTextHex = body ? body.toString('hex') : undefined
           const decryptedText = eapiDecrypt(encryptedTextHex)
-          console.log('[WY eapiRequest] 解密后的文本:', decryptedText)
+          // console.log('[WY eapiRequest] 解密后的文本:', decryptedText)
           let decryptedJson
           try {
             decryptedJson = JSON.parse(decryptedText)
-            console.log('[WY eapiRequest] 解密并解析JSON成功:', decryptedJson)
+            // console.log('[WY eapiRequest] 解密并解析JSON成功:', decryptedJson)
           } catch (e) {
             console.error('[WY eapiRequest] JSON 解析失败:', e)
             decryptedJson = { code: 501, message: 'JSON Parse failed' }
