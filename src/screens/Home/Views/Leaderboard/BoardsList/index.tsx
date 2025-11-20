@@ -9,12 +9,15 @@ export interface BoardsListProps {
   onBoundChange: (listId: string) => void
   onPlay: (listId: string) => void
   onCollect: (listId: string, name: string) => void
+  // 新增 onRefresh 回调定义
+  onRefresh: (listId: string) => void
 }
 export interface BoardsListType {
   setList: (list: BoardItem[], activeId: string) => void
 }
 
-export default forwardRef<BoardsListType, BoardsListProps>(({ onBoundChange, onPlay, onCollect }, ref) => {
+// 解构 props 里的 onRefresh
+export default forwardRef<BoardsListType, BoardsListProps>(({ onBoundChange, onPlay, onCollect, onRefresh }, ref) => {
   const listRef = useRef<ListType>(null)
   const listMenuRef = useRef<ListMenuType>(null)
 
@@ -43,6 +46,8 @@ export default forwardRef<BoardsListType, BoardsListProps>(({ onBoundChange, onP
         onHideMenu={() => listRef.current?.hideMenu()}
         onPlay={({ listId }) => { onPlay(listId) }}
         onCollect={({ listId, name }) => { onCollect(listId, name) }}
+        // 【【【 3. 绑定 onRefresh 事件 】】】
+        onRefresh={({ listId }) => { onRefresh(listId) }}
       />
     </View>
   )

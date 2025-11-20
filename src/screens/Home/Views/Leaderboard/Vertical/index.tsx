@@ -64,6 +64,13 @@ export default () => {
       drawer.current?.openDrawer()
     })
   }
+  // 定义刷新回调
+  const onRefresh: BoardsListProps['onRefresh'] = (id) => {
+    boundInfo.current.id = id
+    // 确保 MusicList 组件暴露了 handleRefresh 方法
+    // (请确认 MusicList/index.tsx 里有 defineExpose({ ..., handleRefresh }))
+    musicListRef.current?.handleRefresh()
+  }
   const onSourceChange: HeaderBarProps['onSourceChange'] = (source) => {
     boundInfo.current.source = source
     void getBoardsList(source).then(list => {
@@ -86,6 +93,7 @@ export default () => {
         onBoundChange={onBoundChange}
         onCollect={onCollect}
         onPlay={onPlay}
+        onRefresh={onRefresh}
       />
     )
   }

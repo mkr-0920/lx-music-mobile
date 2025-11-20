@@ -12,6 +12,7 @@ import { handlePlay } from './listAction'
 
 export interface MusicListType {
   loadList: (source: LX.OnlineSource, listId: string) => void
+  handleRefresh: () => void
 }
 
 export default forwardRef<MusicListType, {}>((props, ref) => {
@@ -42,6 +43,7 @@ export default forwardRef<MusicListType, {}>((props, ref) => {
         })
       }
     },
+    handleRefresh,
   }), [])
 
   useEffect(() => {

@@ -8,6 +8,26 @@ import xm from './xm'
 import mkr from './mkr'
 import { apis, supportQuality } from './api-source'
 
+import leaderboard_daily from './mkr/leaderboard_daily'
+import leaderboard_fm from './mkr/leaderboard_fm'
+
+const wy_daily = {
+  leaderboard: leaderboard_daily, // 挂载日推列表逻辑
+  // 复用 wy 的播放/歌词/封面逻辑
+  getMusicUrl: wy.getMusicUrl,
+  getLyric: wy.getLyric,
+  getPic: wy.getPic,
+  getMusicInfo: wy.getMusicInfo,
+}
+
+const wy_fm = {
+  leaderboard: leaderboard_fm, // 挂载 FM 列表逻辑
+  // 复用 wy 的播放/歌词/封面逻辑
+  getMusicUrl: wy.getMusicUrl,
+  getLyric: wy.getLyric,
+  getPic: wy.getPic,
+  getMusicInfo: wy.getMusicInfo,
+}
 
 const sources = {
   sources: [
@@ -35,6 +55,14 @@ const sources = {
       name: '我的音乐',
       id: 'mkr',
     },
+    {
+      name: '网易风格推荐',
+      id: 'wy_daily',
+    },
+    {
+      name: '网易私人FM',
+      id: 'wy_fm',
+    },
     // {
     //   name: '百度音乐',
     //   id: 'bd',
@@ -48,6 +76,8 @@ const sources = {
   // bd,
   xm,
   mkr,
+  wy_daily,
+  wy_fm,
 }
 export default {
   ...sources,
