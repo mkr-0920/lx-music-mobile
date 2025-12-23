@@ -7,6 +7,7 @@ import { eapiRequest } from '../wy/utils/index'
 import { formatPlayTime, sizeFormate, formatPlayCount } from '../../index'
 import musicDetailApi from '../wy/musicDetail'
 import { formatSingerName } from '../utils'
+import settingState from '@/store/setting/state'
 
 // --- 辅助函数: 解析 linuxapi 返回的 tracks ---
 const filterListDetail = ({ playlist: { tracks }, privileges }) => {
@@ -82,13 +83,13 @@ export default {
   /**
    * 获取用户歌单列表
    */
-  getBoards: async(uid = '3891360967') => {
+  getBoards: async() => {
     const requestObj = eapiRequest(
       '/api/user/playlist/',
       {
         offset: '0',
         limit: '1000',
-        uid: String(uid),
+        uid: String(settingState.setting['common.wyUserId']),
         e_r: true,
       },
       'mobile',

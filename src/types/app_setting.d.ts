@@ -32,6 +32,16 @@ declare global {
       'common.shareType': 'system' | 'clipboard'
 
       /**
+       * 网易云用户ID
+       */
+      'common.wyUserId': string
+
+      /**
+       * 网易云用户ID
+       */
+      'common.wyCookie': string
+
+      /**
        * 是否同意软件协议
        */
       'common.isAgreePact': boolean
