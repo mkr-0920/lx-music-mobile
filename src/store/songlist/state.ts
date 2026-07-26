@@ -36,6 +36,11 @@ export declare interface ListInfoItem {
   desc?: string
   source: LX.OnlineSource
   total?: string
+  type?: 'songlist' | 'album'
+  singer?: string
+  publishTime?: string
+  publishTimestamp?: number
+  size?: number
 }
 export declare interface ListInfo {
   list: ListInfoItem[]

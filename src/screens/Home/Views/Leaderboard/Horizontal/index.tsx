@@ -22,6 +22,9 @@ export default () => {
       boardId: id,
     })
   }
+  const handleRefresh: LeftBarProps['onRefresh'] = () => {
+    musicListRef.current?.handleRefresh()
+  }
 
   useEffect(() => {
     isUnmountedRef.current = false
@@ -41,6 +44,7 @@ export default () => {
       <LeftBar
         ref={leftBarRef}
         onChangeList={handleChangeBound}
+        onRefresh={handleRefresh}
       />
       <MusicList
         ref={musicListRef}

@@ -22,6 +22,10 @@ export const setPlayListId = (listId: string | null) => {
   playerActions.setPlayListId(listId)
 }
 
+export const setPlaybackSource = (source: LX.Source | null) => {
+  playerActions.setPlaybackSource(source)
+}
+
 
 /**
  * 更新播放位置

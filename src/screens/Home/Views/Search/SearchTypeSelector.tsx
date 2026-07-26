@@ -11,6 +11,8 @@ import { BorderWidths } from '@/theme'
 
 const SEARCH_TYPE_LIST = [
   'music',
+  'album',
+  'artist',
   'songlist',
 ] as const
 

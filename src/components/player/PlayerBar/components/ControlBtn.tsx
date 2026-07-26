@@ -5,6 +5,7 @@ import { useTheme } from '@/store/theme/hook'
 import { playNext, playPrev, togglePlay } from '@/core/player/player'
 import { createStyle } from '@/utils/tools'
 import { useHorizontalMode } from '@/utils/hooks'
+import { showPlayQueueOverlay } from '@/navigation'
 
 const BTN_SIZE = 24
 const handlePlayPrev = () => {
@@ -34,6 +35,15 @@ const PlayNextBtn = () => {
   )
 }
 
+const PlayQueueBtn = () => {
+  const theme = useTheme()
+  return (
+    <TouchableOpacity style={styles.cotrolBtn} activeOpacity={0.5} onPress={showPlayQueueOverlay}>
+      <Icon name='list-order' color={theme['c-button-font']} size={BTN_SIZE} />
+    </TouchableOpacity>
+  )
+}
+
 const TogglePlayBtn = () => {
   const isPlay = useIsPlay()
   const theme = useTheme()
@@ -59,6 +69,7 @@ export default () => {
       { isHorizontalMode ? <PlayPrevBtn /> : null }
       <TogglePlayBtn />
       <PlayNextBtn />
+      <PlayQueueBtn />
     </>
   )
 }

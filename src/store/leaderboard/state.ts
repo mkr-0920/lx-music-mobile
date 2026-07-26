@@ -1,6 +1,6 @@
 import music from '@/utils/musicSdk'
 
-export declare type Source = LX.OnlineSource
+export declare type Source = LX.LeaderboardSource
 
 export declare interface BoardItem {
   id: string
@@ -9,23 +9,23 @@ export declare interface BoardItem {
 }
 export declare interface Board {
   list: BoardItem[]
-  source: LX.OnlineSource
+  source: Source
 }
-type Boards = Partial<Record<LX.OnlineSource, Board>>
+type Boards = Partial<Record<Source, Board>>
 
 export declare interface ListDetailInfo {
   list: LX.Music.MusicInfoOnline[]
   total: number
   maxPage: number
   page: number
-  source: LX.OnlineSource | null
+  source: Source | null
   limit: number
   key: string | null
   id: string
 }
 
 export interface InitState {
-  sources: LX.OnlineSource[]
+  sources: Source[]
   boards: Boards
   listDetailInfo: ListDetailInfo
 }
@@ -46,8 +46,9 @@ const state: InitState = {
 }
 
 for (const source of music.sources) {
-  if (!music[source.id as LX.OnlineSource]?.leaderboard?.getBoards) continue
-  state.sources.push(source.id as LX.OnlineSource)
+  if (source.id == 'mkr') continue
+  if (!music[source.id as Source]?.leaderboard?.getBoards) continue
+  state.sources.push(source.id as Source)
 }
 
 

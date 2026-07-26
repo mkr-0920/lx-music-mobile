@@ -24,6 +24,7 @@ const hello = async(urlInfo: LX.Sync.UrlInfo) => request(`${urlInfo.httpProtocol
   .catch((err: any) => {
     log.error('[auth] hello', err.message)
     console.log(err)
+    if (err.message == SYNC_CODE.lowServiceVersion || err.message == SYNC_CODE.highServiceVersion) throw err
     return false
   })
 
@@ -98,7 +99,7 @@ const auth = async(urlInfo: LX.Sync.UrlInfo, serverId: string, authCode?: string
 }
 
 export default async(urlInfo: LX.Sync.UrlInfo, authCode?: string) => {
-  console.log('connect: ', urlInfo.href, authCode)
+  console.log('connect: ', urlInfo.href)
   console.log(`${urlInfo.httpProtocol}//${urlInfo.hostPath}/hello`)
   if (!await hello(urlInfo)) throw new Error(SYNC_CODE.connectServiceFailed)
   const serverId = await getServerId(urlInfo)

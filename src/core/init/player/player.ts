@@ -1,5 +1,4 @@
-import { addPlayedList, clearPlayedList } from '@/core/player/playedList'
-import { pause, playNext } from '@/core/player/player'
+import { applyPlayQueueMode, pause, playNext } from '@/core/player/player'
 import { setStatusText, setIsPlay } from '@/core/player/playStatus'
 // import { resetPlayerMusicInfo } from '@/core/player/playInfo'
 import { setStop } from '@/plugins/player'
@@ -44,12 +43,9 @@ export default async(setting: LX.AppSetting) => {
     }
   }
 
-  const handleConfigUpdated: typeof global.state_event.configUpdated = (keys, settings) => {
+  const handleConfigUpdated: typeof global.state_event.configUpdated = (keys) => {
     if (keys.includes('player.togglePlayMethod')) {
-      const newValue = settings['player.togglePlayMethod']
-      if (playerState.playedList.length) clearPlayedList()
-      const playMusicInfo = playerState.playMusicInfo
-      if (newValue == 'random' && playMusicInfo.musicInfo && !playMusicInfo.isTempPlay) addPlayedList({ ...(playMusicInfo as LX.Player.PlayMusicInfo) })
+      applyPlayQueueMode()
     }
   }
 

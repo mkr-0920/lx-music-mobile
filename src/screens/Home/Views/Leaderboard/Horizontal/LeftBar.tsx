@@ -9,7 +9,7 @@ import BoardsList, { type BoardsListType, type BoardsListProps } from '../Boards
 import { BorderWidths } from '@/theme'
 import { createStyle } from '@/utils/tools'
 import { handleCollect, handlePlay } from '../listAction'
-import boardState, { type InitState } from '@/store/leaderboard/state'
+import boardState, { type InitState, type Source } from '@/store/leaderboard/state'
 import { useTheme } from '@/store/theme/hook'
 import { getBoardsList } from '@/core/leaderboard'
 
@@ -18,18 +18,19 @@ type Sources = Readonly<InitState['sources']>
 type SourceSelectorType = _SourceSelectorType<Sources>
 
 export interface LeftBarProps {
-  onChangeList: (source: LX.OnlineSource, id: string) => void
+  onChangeList: (source: Source, id: string) => void
+  onRefresh: () => void
 }
 
 export interface LeftBarType {
-  setBound: (source: LX.OnlineSource, id: string) => void
+  setBound: (source: Source, id: string) => void
 }
 
-export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => {
+export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList, onRefresh }, ref) => {
   const theme = useTheme()
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
   const boardsListRef = useRef<BoardsListType>(null)
-  const boundInfo = useRef<{ source: LX.OnlineSource, id: string | null }>({ source: 'kw', id: null })
+  const boundInfo = useRef<{ source: Source, id: string | null }>({ source: 'kw', id: null })
   useImperativeHandle(ref, () => ({
     setBound(source, listId) {
       boundInfo.current = { source, id: listId }
@@ -41,7 +42,7 @@ export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => 
   }), [])
 
 
-  const onSourceChange = (source: LX.OnlineSource) => {
+  const onSourceChange = (source: Source) => {
     boundInfo.current.source = source
     void getBoardsList(source).then(list => {
       const id = list[0].id
@@ -76,6 +77,7 @@ export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => 
         onBoundChange={onBoundChange}
         onPlay={onPlay}
         onCollect={onCollect}
+        onRefresh={onRefresh}
       />
     </View>
   )

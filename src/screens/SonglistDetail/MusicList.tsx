@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react'
 import OnlineList, { type OnlineListType, type OnlineListProps } from '@/components/OnlineList'
-import { clearListDetail, getListDetail, setListDetail, setListDetailInfo } from '@/core/songlist'
+// 👇 改用带分发器的 core 方法 👇
+import { clearListDetail, getListDetailWithAlbum, setListDetail, setListDetailInfo } from '@/core/songlist'
 import songlistState from '@/store/songlist/state'
 import { handlePlay } from './listAction'
 import Header, { type HeaderType } from './Header'
@@ -19,6 +20,9 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
   const headerRef = useRef<HeaderType>(null)
   const isUnmountedRef = useRef(false)
   const info = useListInfo()
+
+  // 💡 极简获取当前的列表类型 (兼容老代码没传 type 的情况)
+  const currentType: 'songlist' | 'album' = (info as any).type || 'songlist'
 
   useImperativeHandle(ref, () => ({
     async loadList(source, id) {
@@ -47,7 +51,9 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
           playCount: (info.play_count ?? listDetailInfo.info.play_count) ?? '',
           imgUrl: info.img ?? listDetailInfo.info.img,
         })
-        return getListDetail(id, source, page).then((listDetail) => {
+
+        // 👇 核心改动：使用带分发器的 getListDetailWithAlbum，并传出 type
+        return getListDetailWithAlbum(id, source, page, currentType).then((listDetail) => {
           const result = setListDetail(listDetail, id, page)
           if (isUnmountedRef.current) return
           requestAnimationFrame(() => {
@@ -79,13 +85,15 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
 
   const handlePlayList: OnlineListProps['onPlayList'] = (index) => {
     const listDetailInfo = songlistState.listDetailInfo
-    // console.log(songlistState.listDetailInfo)
-    void handlePlay(listDetailInfo.id, listDetailInfo.source, listDetailInfo.list, index)
+    // 👇 把当前的 type 传给 handlePlay，让它去取完整数据时不要翻车
+    void handlePlay(listDetailInfo.id, listDetailInfo.source, listDetailInfo.list, index, currentType)
   }
+
   const handleRefresh: OnlineListProps['onRefresh'] = () => {
     const page = 1
     listRef.current?.setStatus('refreshing')
-    getListDetail(songlistState.listDetailInfo.id, songlistState.listDetailInfo.source, page, true).then((listDetail) => {
+    // 👇 核心改动：刷新时带上 type
+    getListDetailWithAlbum(songlistState.listDetailInfo.id, songlistState.listDetailInfo.source, page, currentType, true).then((listDetail) => {
       const result = setListDetail(listDetail, songlistState.listDetailInfo.id, page)
       if (isUnmountedRef.current) return
       listRef.current?.setList(result.list)
@@ -95,10 +103,12 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
       listRef.current?.setStatus('error')
     })
   }
+
   const handleLoadMore: OnlineListProps['onLoadMore'] = () => {
     listRef.current?.setStatus('loading')
     const page = songlistState.listDetailInfo.list.length ? songlistState.listDetailInfo.page + 1 : 1
-    getListDetail(songlistState.listDetailInfo.id, songlistState.listDetailInfo.source, page).then((listDetail) => {
+    // 👇 核心改动：翻页时带上 type
+    getListDetailWithAlbum(songlistState.listDetailInfo.id, songlistState.listDetailInfo.source, page, currentType).then((listDetail) => {
       const result = setListDetail(listDetail, songlistState.listDetailInfo.id, page)
       if (isUnmountedRef.current) return
       listRef.current?.setList(result.list, true)
@@ -121,4 +131,3 @@ export default forwardRef<MusicListType, MusicListProps>(({ componentId }, ref) 
     // progressViewOffset={}
    />
 })
-

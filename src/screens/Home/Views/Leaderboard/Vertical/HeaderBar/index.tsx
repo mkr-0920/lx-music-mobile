@@ -13,14 +13,15 @@ import { useTheme } from '@/store/theme/hook'
 // import { BorderWidths } from '@/theme'
 import ActiveListName, { type ActiveListNameType } from './ActiveListName'
 import { BorderWidths } from '@/theme'
+import { type Source } from '@/store/leaderboard/state'
 
 export interface HeaderBarProps {
   onShowBound: () => void
-  onSourceChange: (source: LX.OnlineSource) => void
+  onSourceChange: (source: Source) => void
 }
 
 export interface HeaderBarType {
-  setBound: (source: LX.OnlineSource, id: string, name: string) => void
+  setBound: (source: Source, id: string, name: string) => void
 }
 
 

@@ -36,10 +36,11 @@ const songList = {
   }),
   sortList: [],
 }
-const tipSearch = () => Promise.resolve({
-  list: [],
-  source: 'mkr',
-})
+const tipSearch = {
+  search: () => Promise.resolve([]),
+}
+
+const getMusicDetailPageUrl = () => null
 
 // --- 组装并导出 "mkr" 源 ---
 const mkr = {
@@ -54,6 +55,7 @@ const mkr = {
   leaderboard,
   songList,
   tipSearch,
+  getMusicDetailPageUrl,
 }
 
 export default mkr

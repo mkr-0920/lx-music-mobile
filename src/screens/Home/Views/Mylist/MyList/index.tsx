@@ -8,6 +8,13 @@ import { handleRemove, handleSync } from './listAction'
 import ListMusicSort, { type ListMusicSortType } from './ListMusicSort'
 import DuplicateMusic, { type DuplicateMusicType } from './DuplicateMusic'
 import syncListToCloud from '@/core/syncListToCloud'
+import WyRemoteMenu, { type WyRemoteMenuType } from '../WyRemoteMenu'
+import {
+  playWyRemoteTarget,
+  refreshWyRemoteTarget,
+  saveWyRemoteTargetAsLocal,
+  syncWyRemoteTarget,
+} from '../wyRemoteActions'
 
 export default () => {
   const [visible, setVisible] = useState(false)
@@ -16,6 +23,7 @@ export default () => {
   const listMusicSortRef = useRef<ListMusicSortType>(null)
   const duplicateMusicRef = useRef<DuplicateMusicType>(null)
   const listImportExportRef = useRef<ListImportExportType>(null)
+  const wyRemoteMenuRef = useRef<WyRemoteMenuType>(null)
 
   useEffect(() => {
     let isInited = false
@@ -37,7 +45,10 @@ export default () => {
   return (
     visible
       ? <>
-          <List onShowMenu={(info, position) => listMenuRef.current?.show(info, position)} />
+          <List
+            onShowMenu={(info, position) => listMenuRef.current?.show(info, position)}
+            onShowRemoteMenu={(item, dirty, position) => wyRemoteMenuRef.current?.show({ item, dirty }, position)}
+          />
           <ListNameEdit ref={listNameEditRef} />
           <ListMusicSort ref={listMusicSortRef} />
           <DuplicateMusic ref={duplicateMusicRef} />
@@ -55,6 +66,14 @@ export default () => {
             // 当菜单点击 "同步至云端" 时，调用 syncListToCloud
             onSyncToCloud={info => { void syncListToCloud(info) }}
             onSelectLocalFile={(info, position) => listImportExportRef.current?.selectFile(info, position)}
+          />
+          <WyRemoteMenu
+            ref={wyRemoteMenuRef}
+            onPlay={item => { void playWyRemoteTarget(item) }}
+            onRefresh={item => { void refreshWyRemoteTarget(item) }}
+            onDiscard={item => { void refreshWyRemoteTarget(item, true) }}
+            onSync={item => { void syncWyRemoteTarget(item) }}
+            onSaveAsLocal={item => { void saveWyRemoteTargetAsLocal(item) }}
           />
           {/* <ImportExport actionType={actionType} visible={isShowChoosePath} hide={() => setShowChoosePath(false)} selectedListRef={selectedListRef} /> */}
         </>

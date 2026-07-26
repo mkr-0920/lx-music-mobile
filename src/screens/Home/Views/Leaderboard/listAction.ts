@@ -5,6 +5,7 @@ import { LIST_IDS } from '@/config/constant'
 import listState from '@/store/list/state'
 import syncSourceList from '@/core/syncSourceList'
 import { confirmDialog, toMD5, toast } from '@/utils/tools'
+import { type Source } from '@/store/leaderboard/state'
 
 
 const getListId = (id: string) => `board__${id}`
@@ -31,8 +32,9 @@ export const handlePlay = async(id: string, list?: LX.Music.MusicInfoOnline[], i
   }
 }
 
-export const handleCollect = async(id: string, name: string, source: LX.OnlineSource) => {
+export const handleCollect = async(id: string, name: string, source: Source) => {
   const listId = getListId(id)
+  const listSource = source == 'wy_daily' || source == 'wy_fm' ? 'wy' : source
   const targetList = listState.userList.find(l => l.sourceListId == listId)
   if (targetList) {
     const confirm = await confirmDialog({
@@ -50,7 +52,7 @@ export const handleCollect = async(id: string, name: string, source: LX.OnlineSo
     name,
     id: `${source}_${toMD5(listId)}`,
     list,
-    source,
+    source: listSource,
     sourceListId: listId,
   })
   toast(global.i18n.t('collect_success'))

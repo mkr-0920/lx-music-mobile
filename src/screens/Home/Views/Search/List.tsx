@@ -5,6 +5,7 @@ import type { Source as SongListSource } from '@/store/search/songlist/state'
 import MusicList, { type MusicListType } from './MusicList'
 import BlankView, { type BlankViewType } from './BlankView'
 import SonglistList from './SonglistList'
+import ArtistList, { type ArtistListType } from './ArtistList'
 
 interface ListProps {
   onSearch: (keyword: string) => void
@@ -16,7 +17,7 @@ export interface ListType {
 export default forwardRef<ListType, ListProps>(({ onSearch }, ref) => {
   const [listType, setListType] = useState<SearchState['searchType']>('music')
   const [showBlankView, setShowListView] = useState(true)
-  const listRef = useRef<MusicListType>(null)
+  const listRef = useRef<MusicListType | ArtistListType | any>(null)
   const blankViewRef = useRef<BlankViewType>(null)
 
   useImperativeHandle(ref, () => ({
@@ -24,9 +25,9 @@ export default forwardRef<ListType, ListProps>(({ onSearch }, ref) => {
       if (text) {
         setShowListView(false)
         setListType(type)
-        // const listDetailInfo = searchMusicState.listDetailInfo
         requestAnimationFrame(() => {
-          listRef.current?.loadList(text, source)
+          // 让 SonglistList 知道现在用户搜的到底是 'songlist' 还是 'album'
+          listRef.current?.loadList(text, source, type)
         })
       } else {
         setShowListView(true)
@@ -40,8 +41,11 @@ export default forwardRef<ListType, ListProps>(({ onSearch }, ref) => {
   return (
     showBlankView
       ? <BlankView ref={blankViewRef} onSearch={onSearch} />
-      : listType == 'songlist'
-        ? <SonglistList ref={listRef} />
-        : <MusicList ref={listRef} />
+      // 只要是 songlist 或者 album，统一丢给 SonglistList 组件去渲染！UI 完美复用！
+      : listType == 'artist'
+        ? <ArtistList ref={listRef} />
+        : (listType == 'songlist' || listType == 'album')
+            ? <SonglistList ref={listRef} />
+            : <MusicList ref={listRef} />
   )
 })

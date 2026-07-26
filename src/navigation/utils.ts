@@ -3,6 +3,7 @@ import {
   VERSION_MODAL,
   PACT_MODAL,
   SYNC_MODE_MODAL,
+  PLAY_QUEUE_OVERLAY,
 } from './screenNames'
 import themeState from '@/store/theme/state'
 
@@ -159,6 +160,41 @@ export const showSyncModeModal = () => {
         // },
       },
     },
+  })
+}
+
+let isPlayQueueOverlayVisible = false
+export const setPlayQueueOverlayVisible = (visible: boolean) => {
+  isPlayQueueOverlayVisible = visible
+}
+
+export const showPlayQueueOverlay = () => {
+  if (isPlayQueueOverlayVisible) return
+  isPlayQueueOverlayVisible = true
+  const theme = themeState.theme
+  void Navigation.showOverlay({
+    component: {
+      name: PLAY_QUEUE_OVERLAY,
+      options: {
+        layout: {
+          componentBackgroundColor: 'transparent',
+        },
+        overlay: {
+          interceptTouchOutside: true,
+        },
+        statusBar: {
+          drawBehind: true,
+          visible: true,
+          style: getStatusBarStyle(theme.isDark),
+          backgroundColor: 'transparent',
+        },
+        navigationBar: {
+          backgroundColor: theme['c-content-background'],
+        },
+      },
+    },
+  }).catch(() => {
+    isPlayQueueOverlayVisible = false
   })
 }
 

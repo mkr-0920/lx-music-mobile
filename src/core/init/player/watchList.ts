@@ -1,4 +1,3 @@
-import { playNext } from '@/core/player/player'
 import { updatePlayIndex } from '@/core/player/playInfo'
 import { throttleBackgroundTimer } from '@/utils/tools'
 import playerState from '@/store/player/state'
@@ -11,19 +10,7 @@ export default () => {
     changedListIds.clear()
     if (isSkip) return
 
-    const { playIndex } = updatePlayIndex()
-    if (playIndex < 0) { // 歌曲被移除
-      // if (global.lx.isPlayedStop) {
-      //   stop()
-      //   setTimeout(() => {
-      //     setPlayMusicInfo(null, null)
-      //   })
-      // } else
-      if (!playerState.playMusicInfo.isTempPlay) {
-        // console.log('current music removed')
-        void playNext(true)
-      }
-    }
+    updatePlayIndex()
   })
 
   const handleListChange = (listIds: string[]) => {

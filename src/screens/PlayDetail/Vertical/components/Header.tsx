@@ -7,6 +7,7 @@ import StatusBar from '@/components/common/StatusBar'
 import { useTheme } from '@/store/theme/hook'
 import { usePlayerMusicInfo } from '@/store/player/hook'
 import Text from '@/components/common/Text'
+import PlaySourceBadge from '@/components/player/PlaySourceBadge'
 import { scaleSizeH } from '@/utils/pixelRatio'
 import { HEADER_HEIGHT as _HEADER_HEIGHT, NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import commonState from '@/store/common/state'
@@ -25,7 +26,10 @@ const Title = () => {
 
   return (
     <View style={styles.titleContent}>
-      <Text numberOfLines={1} style={styles.title}>{musicInfo.name}</Text>
+      <View style={styles.titleRow}>
+        <Text numberOfLines={1} style={styles.musicTitle}>{musicInfo.name}</Text>
+        <PlaySourceBadge fontSize={10} />
+      </View>
       <Text numberOfLines={1} style={styles.title} size={12} color={theme['c-font-label']}>{musicInfo.singer}</Text>
     </View>
   )
@@ -68,6 +72,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     // alignItems: 'center',
     justifyContent: 'center',
+  },
+  titleRow: {
+    width: '100%',
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  musicTitle: {
+    minWidth: 0,
+    flexShrink: 1,
   },
   title: {
     // flex: 1,

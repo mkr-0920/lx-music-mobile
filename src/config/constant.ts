@@ -45,11 +45,13 @@ export const storageDataPrefix = {
   list: '@list__',
   listScrollPosition: '@list_scroll_position',
   listPrevSelectId: '@list_prev_select_id',
+  wyRemoteDraftSnapshots: '@wy_remote_draft_snapshots',
 
   lyric: '@lyric__',
   musicUrl: '@music_url__',
   musicOtherSource: '@music_other_source__',
   playInfo: '@play_info',
+  playQueue: '@play_queue_v1',
 
   syncAuthKey: '@sync_auth_key',
   syncHost: '@sync_host',
@@ -130,7 +132,7 @@ export const MUSIC_TOGGLE_MODE_LIST = [
 
 export const DEFAULT_SETTING = {
   leaderboard: {
-    source: 'kw' as LX.OnlineSource,
+    source: 'kw' as LX.LeaderboardSource,
     boardId: 'kw__16',
   },
 
@@ -144,7 +146,7 @@ export const DEFAULT_SETTING = {
   search: {
     temp_source: 'kw' as LX.OnlineSource,
     source: 'all' as LX.OnlineSource | 'all',
-    type: 'music' as 'music' | 'songlist',
+    type: 'music' as 'music' | 'album' | 'artist' | 'songlist',
   },
 
   viewPrevState: {

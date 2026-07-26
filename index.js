@@ -1,6 +1,7 @@
 /**
  * @format
  */
+import 'react-native-gesture-handler'
 import './shim'
 import './src/app'
 // import './test'

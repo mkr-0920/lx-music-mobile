@@ -64,6 +64,7 @@ const setList = (datas: SearchResult, page: number, text: string): ListInfoItem[
   else listInfo.total = datas.limit * page
   listInfo.page = page
   listInfo.limit = datas.limit
+  state.maxPages[datas.source] = Math.ceil(datas.total / datas.limit)
   state.source = datas.source
   return listInfo.list
 }

@@ -19,6 +19,15 @@ export const hideModal = (componentId: string) => {
 }
 
 export const checkUpdate = async() => {
+  // ==========================================
+  // 💥 临时拦截：等服务器配好了，直接把这段注释/删掉即可恢复更新功能！
+  versionActions.setVersionInfo({
+    status: 'idle',
+    isLatest: true,
+    isUnknown: false,
+  })
+  return
+  // ==========================================
   versionActions.setVersionInfo({ status: 'checking' })
   let versionInfo: InitState['versionInfo'] = { ...versionState.versionInfo }
   try {

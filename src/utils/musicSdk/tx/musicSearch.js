@@ -2,6 +2,11 @@ import { httpFetch } from '../../request'
 import { formatPlayTime, sizeFormate } from '../../index'
 import { formatSingerName } from '../utils'
 
+const NETWORK_RETRY_LIMIT = 5
+const NETWORK_RETRY_DELAY = 500
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 export default {
   limit: 30,
   total: 0,
@@ -9,15 +14,18 @@ export default {
   allPage: 1,
   successCode: 0,
   // musicSearch 函数负责发起 HTTP 请求
-  musicSearch(str, page, limit, retryNum = 0) {
-    if (retryNum > 5) return Promise.reject(new Error('搜索失败'))
+  musicSearch(str, page, limit, retryNum = 0, mode = 'desktop', desktopReqCode = null) {
+    if (retryNum > NETWORK_RETRY_LIMIT) return Promise.reject(new Error('QQ音乐搜索网络请求失败'))
+
+    const isLite = mode == 'lite'
 
     // 使用 httpFetch 发送 POST 请求
     const searchRequest = httpFetch('https://u.y.qq.com/cgi-bin/musicu.fcg', {
       method: 'post',
       headers: {
-        // 新接口
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        'User-Agent': isLite
+          ? 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)'
+          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
         'Content-Type': 'application/json;charset=utf-8',
         Accept: 'application/json, text/plain, */*',
         'Sec-Fetch-Dest': 'empty',
@@ -25,27 +33,32 @@ export default {
         'Sec-Fetch-Site': 'same-origin',
       },
       body: {
-        // comm 模块, "cv":"1859" 和 "uin":"0" 是免 cookie 的关键
-        comm: {
-          ct: '19',
-          cv: '1859',
-          uin: '0', // uin 为 0, 表示游客身份
-        },
+        comm: isLite
+          ? {
+              ct: 11,
+              cv: '1003006',
+              v: '1003006',
+              os_ver: '12',
+              phonetype: '0',
+              devicelevel: '31',
+              tmeAppID: 'qqmusiclight',
+              nettype: 'NETWORK_WIFI',
+            }
+          : {
+              ct: '19',
+              cv: '1859',
+              uin: '0',
+            },
         req: {
           module: 'music.search.SearchCgiService',
-          // 调用的方法改为 DoSearchForQQMusicDesktop
-          method: 'DoSearchForQQMusicDesktop',
-          // param 传入搜索参数
+          method: isLite ? 'DoSearchForQQMusicLite' : 'DoSearchForQQMusicDesktop',
           param: {
             grp: 1,
-            // 搜索关键词
             query: str,
-            // 搜索类型: 0 为歌曲
             search_type: 0,
-            // 每页返回的结果数量
             num_per_page: limit,
-            // 页面序号
             page_num: page,
+            ...(isLite ? { nqc_flag: 0 } : {}),
           },
         },
       },
@@ -53,12 +66,45 @@ export default {
 
     // 处理请求的 Promise
     return searchRequest.promise.then(({ body }) => {
-      console.log(body)
-      // console.log(body)
-      // 检查返回码，如果失败则重试
-      if (body.code != this.successCode || body.req.code != this.successCode) return this.musicSearch(str, page, limit, ++retryNum)
-      // 成功则返回 req.data, 里面包含了 body 和 meta
-      return body.req.data
+      console.log('[tx search response]', {
+        mode,
+        code: body?.code,
+        reqCode: body?.req?.code,
+        message: body?.req?.message ?? body?.message,
+        songCount: isLite
+          ? body?.req?.data?.body?.item_song?.length
+          : body?.req?.data?.body?.song?.list?.length,
+      })
+
+      const outerCode = body?.code
+      const reqCode = body?.req?.code
+      if (outerCode == this.successCode && reqCode == this.successCode) {
+        const data = body.req.data
+        return {
+          list: isLite ? data.body.item_song : data.body.song.list,
+          meta: data.meta,
+        }
+      }
+
+      if (!isLite && reqCode == 2001) {
+        return this.musicSearch(str, page, limit, 0, 'lite', reqCode)
+      }
+
+      const codes = isLite
+        ? `Desktop req.code=${desktopReqCode ?? 'unknown'}, Lite req.code=${reqCode ?? 'unknown'}`
+        : `code=${outerCode ?? 'unknown'}, req.code=${reqCode ?? 'unknown'}`
+      const error = new Error(`QQ音乐搜索失败: ${codes}`)
+      error.isBusinessError = true
+      throw error
+    }).catch(async(err) => {
+      if (err.isBusinessError || err.isSearchTerminalError) throw err
+      if (retryNum >= NETWORK_RETRY_LIMIT) {
+        const error = new Error(`QQ音乐搜索网络请求失败: ${err.message}`)
+        error.isSearchTerminalError = true
+        throw error
+      }
+      await delay(NETWORK_RETRY_DELAY * (retryNum + 1))
+      return this.musicSearch(str, page, limit, retryNum + 1, mode, desktopReqCode)
     })
   },
   // handleResult 函数负责格式化原始数据
@@ -143,12 +189,8 @@ export default {
   search(str, page = 1, limit) {
     if (limit == null) limit = this.limit
     // 调用 musicSearch 获取数据
-    return this.musicSearch(str, page, limit).then(({ body, meta }) => {
-      // 旧接口的歌曲列表路径是 body.item_song
-      // let list = this.handleResult(body.item_song)
-      //
-      // 新接口(DoSearchForQQMusicDesktop)的歌曲列表路径是 body.song.list
-      let list = this.handleResult(body.song.list)
+    return this.musicSearch(str, page, limit).then(({ list: rawList, meta }) => {
+      const list = this.handleResult(rawList)
       // 处理分页和总数
       this.total = meta.estimate_sum
       this.page = page

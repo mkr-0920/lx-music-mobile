@@ -186,7 +186,8 @@ export const userListsUpdatePosition = (position: number, ids: string[]) => {
   const map = new Map<string, LX.List.UserListInfo>()
   for (const item of newUserLists) map.set(item.id, item)
   for (const id of ids) {
-    const listInfo = map.get(id)!
+    const listInfo = map.get(id)
+    if (!listInfo) continue
     listInfo.locationUpdateTime = Date.now()
     updateLists.push(listInfo)
     map.delete(id)
@@ -303,7 +304,9 @@ export const listMusicUpdatePosition = async(listId: string, position: number, i
   const map = new Map<string, LX.Music.MusicInfo>()
   for (const item of targetList) map.set(item.id, item)
   for (const id of ids) {
-    infos.push(map.get(id)!)
+    const info = map.get(id)
+    if (!info) continue
+    infos.push(info)
     map.delete(id)
   }
   const list = targetList.filter(mInfo => map.has(mInfo.id))

@@ -80,8 +80,6 @@ export const getList = async(source: LX.OnlineSource, tabId: string, sortId: str
   return musicSdk[source]?.songList.getList(sortId, tabId, page).then((result: ListInfo) => {
     cache.set(pageKey, result)
     return result
-    // if (pageKey != listInfo.key) return
-    // setList(result, tabId, sortId, page)
   })
 }
 
@@ -167,6 +165,7 @@ export const clearListDetail = () => {
  * 获取歌单内单页歌曲
  * @param id 歌单id
  * @param source 歌单源
+ * @param page 页数
  * @param isRefresh 是否跳过缓存
  * @returns
  */
@@ -185,15 +184,76 @@ export const getListDetail = async(id: string, source: LX.OnlineSource, page: nu
   return getListDetailLimit(source, id, page)
 }
 
+// ==========================================
+// 👇 新增：优雅的专辑分发拦截器 👇
+// ==========================================
+
 /**
- * 获取歌单内全部歌曲
+ * 带有类型智能识别的歌单详情获取分发器
+ * @param id 列表 ID
+ * @param source 源
+ * @param page 页码
+ * @param type 类型：'songlist' | 'album'
+ * @param isRefresh 是否刷新缓存
+ */
+export const getListDetailWithAlbum = async(
+  id: string,
+  source: LX.OnlineSource,
+  page: number,
+  type: 'songlist' | 'album' = 'songlist',
+  isRefresh = false,
+): Promise<ListDetailInfo> => {
+  if (type === 'album') {
+    const albumSdk = (musicSdk as any)[source]?.album
+    if (!albumSdk) return Promise.reject(new Error(`Album API not supported for source: ${source}`))
+
+    if (page > 1) {
+      const emptyResult: ListDetailInfo = {
+        list: [], source, total: 0, page, limit: LIST_LOAD_LIMIT, maxPage: 1, key: null, id, info: {},
+      }
+      return emptyResult
+    }
+
+    return albumSdk.getAlbumDetail(id).then((detail: any) => {
+      const mappedList = detail.list.map((m: any) => toNewMusicInfo(m)) as LX.Music.MusicInfoOnline[]
+      const formattedList: LX.Music.MusicInfoOnline[] = deduplicationList(mappedList)
+      const result: ListDetailInfo = {
+        list: formattedList,
+        source,
+        total: formattedList.length,
+        page: 1,
+        limit: Math.max(formattedList.length, LIST_LOAD_LIMIT),
+        maxPage: 1,
+        key: null,
+        id,
+        info: {
+          name: detail.info.name,
+          img: detail.info.img,
+          desc: `歌手：${detail.info.singer}\n发行时间：${detail.info.publishTime}\n发行公司：${detail.info.company}\n\n${detail.info.desc}`,
+          author: detail.info.singer,
+          play_count: '',
+        },
+      }
+      return result
+    })
+  }
+
+  return getListDetail(id, source, page, isRefresh)
+}
+
+// ==========================================
+// 👆 拦截器结束 👆
+// ==========================================
+
+
+/**
+ * 获取歌单内全部歌曲 (用于播放全部或收藏全部)
  * @param id 歌单id
  * @param source 歌单源
  * @param isRefresh 是否跳过缓存
  * @returns
  */
 export const getListDetailAll = async(source: LX.OnlineSource, id: string, isRefresh = false): Promise<LX.Music.MusicInfoOnline[]> => {
-  // console.log(tabId)
   const listKey = `sdetail__${source}__${id}`
   let listCache = cache.get(listKey) as LimitDetailCache
   if (!listCache || isRefresh) {
@@ -206,6 +266,7 @@ export const getListDetailAll = async(source: LX.OnlineSource, id: string, isRef
     if (pageCache) return pageCache.data
     return getListDetailLimit(source, id, page)
   }
+
   return loadData(1).then(async result => {
     if (result.total <= result.limit) return result.list
 
@@ -218,4 +279,21 @@ export const getListDetailAll = async(source: LX.OnlineSource, id: string, isRef
     }
     return loadDetail().then(result2 => [...result.list, ...result2])
   }).then(list => deduplicationList(list))
+}
+
+// ==========================================
+// 👇 新增：获取专辑/歌单全部歌曲的分发器 👇
+// ==========================================
+
+export const getListDetailAllWithAlbum = async(
+  source: LX.OnlineSource,
+  id: string,
+  type: 'songlist' | 'album' = 'songlist',
+  isRefresh = false,
+): Promise<LX.Music.MusicInfoOnline[]> => {
+  if (type === 'album') {
+    return getListDetailWithAlbum(id, source, 1, type, isRefresh).then(res => res.list)
+  }
+
+  return getListDetailAll(source, id, isRefresh)
 }

@@ -10,6 +10,7 @@ import { throttle } from './common'
 const fontSizeKey = storageDataPrefix.fontSize
 const themeKey = storageDataPrefix.theme
 const playInfoStorageKey = storageDataPrefix.playInfo
+const playQueueStorageKey = storageDataPrefix.playQueue
 const userListKey = storageDataPrefix.userList
 const viewPrevStateKey = storageDataPrefix.viewPrevState
 const listScrollPositionKey = storageDataPrefix.listScrollPosition
@@ -259,6 +260,10 @@ export const saveSongListSetting = async(setting: Partial<typeof DEFAULT_SETTING
 export const getLeaderboardSetting = async() => {
   // eslint-disable-next-line require-atomic-updates
   leaderboardSetting ??= await getData(leaderboardSettingKey) ?? { ...DEFAULT_SETTING.leaderboard }
+  if (leaderboardSetting.source == 'mkr') {
+    leaderboardSetting = { ...DEFAULT_SETTING.leaderboard }
+    saveLeaderboardSettingThrottle()
+  }
   return { ...leaderboardSetting }
 }
 export const saveLeaderboardSetting = async(setting: Partial<typeof DEFAULT_SETTING['leaderboard']>) => {
@@ -428,6 +433,15 @@ export const savePlayInfo = async(playInfo: LX.Player.SavedPlayInfo) => {
 // 获取上次关闭时的当前歌曲播放信息
 export const getPlayInfo = async() => {
   return getData<LX.Player.SavedPlayInfo | null>(playInfoStorageKey)
+}
+
+export const savePlayQueue = async(queue: LX.Player.SavedPlayQueue | null) => {
+  if (!queue) return removeData(playQueueStorageKey)
+  return saveData(playQueueStorageKey, queue)
+}
+
+export const getPlayQueue = async() => {
+  return getData<LX.Player.SavedPlayQueue | null>(playQueueStorageKey)
 }
 
 let selectedManagedFolder: string | null = ''

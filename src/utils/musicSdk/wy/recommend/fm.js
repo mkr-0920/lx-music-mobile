@@ -1,44 +1,8 @@
-// [文件: src/utils/musicSdk/mkr/leaderboard_fm.js]
-
-import { eapiRequest } from '../wy/utils/index'
-import { handleResult } from '../wy/utils/parser'
-import settingState from '@/store/setting/state'
-import { toast } from '@/utils/tools'
-
-// 构造请求选项 (支持强制指定 OS)
-const getRequestOptions = (forceOs = null) => {
-  let wyCookie = settingState.setting['common.wyCookie']
-  if (!wyCookie) {
-    toast('请先在设置中填写网易云 Cookie')
-    return 'mobile'
-  }
-
-  if (forceOs) {
-    if (/os=[^;]+/.test(wyCookie)) {
-      wyCookie = wyCookie.replace(/os=[^;]+/, `os=${forceOs}`)
-    } else {
-      wyCookie += `; os=${forceOs}`
-    }
-    if (!/appver=[^;]+/.test(wyCookie)) {
-      wyCookie += '; appver=9.9.9'
-    } else {
-      // 如果没有，追加它
-      wyCookie += '; appver=9.9.9'
-    }
-  }
-
-  return {
-    mobile: true,
-    headers: {
-      Cookie: wyCookie,
-    },
-  }
-}
+import { eapiRequest } from '../utils/index'
+import { handleResult } from '../utils/parser'
+import { getRequestOptions } from './utils'
 
 export default {
-  /**
-   * 获取 FM 模式列表
-   */
   getBoards: async() => {
     const extJson = JSON.stringify({
       clientLibraAbTest: { 'fm-style-reopen': 't3', fmNameTest0422: 'c' },
@@ -55,7 +19,6 @@ export default {
         header: '{}',
         e_r: true,
       },
-      // 强制伪装 Android
       getRequestOptions('android'),
     )
 
@@ -89,9 +52,6 @@ export default {
     }
   },
 
-  /**
-   * 获取歌曲列表
-   */
   getList: async(bangid, page) => {
     const options = getRequestOptions('android')
     if (!options.headers?.Cookie) {
@@ -110,7 +70,7 @@ export default {
     }
 
     const targetTotal = 30
-    let collectedList = []
+    const collectedList = []
     const maxRetry = 10
 
     const requestData = {
@@ -121,9 +81,7 @@ export default {
       header: '{}',
       e_r: true,
     }
-    if (subMode) {
-      requestData.subMode = subMode
-    }
+    if (subMode) requestData.subMode = subMode
 
     for (let i = 0; i < maxRetry; i++) {
       if (collectedList.length >= targetTotal) break
@@ -144,7 +102,6 @@ export default {
           if (!exists) collectedList.push(song)
         })
 
-        // 稍微等待，防止请求过快
         await new Promise(resolve => setTimeout(resolve, 200))
       } catch (err) {
         console.error('[WY FM] 获取部分歌曲失败:', err)

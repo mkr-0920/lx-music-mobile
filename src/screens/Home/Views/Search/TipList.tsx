@@ -12,8 +12,21 @@ import { debounce } from '@/utils'
 export const ITEM_HEIGHT = scaleSizeH(36)
 
 export const debounceTipSearch = debounce((keyword: string, source: SearchState['temp_source'], callback: (list: string[]) => void) => {
-  // console.log(reslutList)
-  void musicSdk[source].tipSearch.search(keyword).then(callback)
+  // 1. 使用 (musicSdk as any) 绕过 TS 的死板检查
+  // 2. 拿到当前音源的 tipSearch 模块
+  const tipSearchApi = (musicSdk as any)[source]?.tipSearch
+
+  // 3. 如果这个音源根本没写 tipSearch (比如 mkr 源)，直接返回空数组，不发请求！
+  if (!tipSearchApi) {
+    callback([])
+    return
+  }
+
+  // 4. 正常调用
+  void tipSearchApi.search(keyword).then(callback).catch(() => {
+    // 容错处理：即使请求失败，也返回空数组，别卡死界面
+    callback([])
+  })
 }, 200)
 
 

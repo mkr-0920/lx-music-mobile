@@ -4,10 +4,13 @@ import Text from '@/components/common/Text'
 import { BorderWidths } from '@/theme'
 import { createStyle } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
+import { type WyRemoteTarget } from '@/core/wyRemoteDraft'
+
+type TargetList = LX.List.MyListInfo | WyRemoteTarget
 
 export default ({ listInfo, onPress, width }: {
-  listInfo: LX.List.MyListInfo
-  onPress: (listInfo: LX.List.MyListInfo) => void
+  listInfo: TargetList
+  onPress: (listInfo: TargetList) => void
   width: number
 }) => {
   const theme = useTheme()

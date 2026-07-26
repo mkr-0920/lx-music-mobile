@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 
 import Text from '@/components/common/Text'
@@ -10,6 +10,14 @@ import { useTheme } from '@/store/theme/hook'
 import { useI18n } from '@/lang'
 import { createStyle } from '@/utils/tools'
 import { scaleSizeW } from '@/utils/pixelRatio'
+import {
+  findWyRemoteDraft,
+  getWyRemoteTargets,
+  isWyRemoteDraft,
+  type WyRemoteTarget,
+} from '@/core/wyRemoteDraft'
+
+type TargetList = LX.List.MyListInfo | WyRemoteTarget
 
 const styles = createStyle({
   list: {
@@ -50,10 +58,24 @@ const EditListItem = ({ itemWidth }: {
 
 export default ({ listId, onPress }: {
   listId: string
-  onPress: (listInfo: LX.List.MyListInfo) => void
+  onPress: (listInfo: TargetList) => void
 }) => {
   const windowSize = useWindowSize()
-  const allList = useMyList().filter(l => l.id != listId)
+  const localLists = useMyList().filter(item => !isWyRemoteDraft(item))
+  const [remoteLists, setRemoteLists] = useState<WyRemoteTarget[]>([])
+  useEffect(() => {
+    void getWyRemoteTargets().then(setRemoteLists).catch(error => {
+      console.error('[Music Add Multiple] Failed to load NetEase playlists:', error)
+    })
+  }, [])
+  const allList = useMemo<TargetList[]>(() => [
+    ...localLists,
+    ...remoteLists.map(item => ({
+      ...item,
+      id: findWyRemoteDraft(item.remoteBoardId)?.id ?? item.id,
+      name: `${global.i18n.t('my_list__wy_group')} · ${item.name}`,
+    })),
+  ].filter(item => item.id != listId), [listId, localLists, remoteLists])
   const itemWidth = useMemo(() => {
     let w = Math.floor(windowSize.width * 0.9 - PADDING)
     let n = Math.floor(w / MIN_WIDTH)

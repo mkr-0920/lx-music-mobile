@@ -82,3 +82,27 @@ export const eapiDecrypt = (encryptedTextHex) => {
     return '{"code": 500, "message": "Decryption failed"}'
   }
 }
+
+const CACHE_KEY_AES_KEY = Buffer.from(')(13daqP@ssw0rd~').toString('base64')
+
+export const generateCacheKey = (params) => {
+  // 1. 标准字典序排序
+  const sortedKeys = Object.keys(params).sort()
+
+  // 2. 拼接 queryString (如 e_r=false&id=3189002)
+  const queryString = sortedKeys.map(k => `${k}=${params[k]}`).join('&')
+
+  // 3. 完美兼容 UTF-8 编码，并转为 Native 层唯一指定的 Base64 食粮
+  const payloadB64 = Buffer.from(unescape(encodeURIComponent(queryString))).toString('base64')
+
+  // 4. 💥 绝杀！调用原生加密！
+  // 传入 ECB_128_NoPadding，Java 底层会自动以 PKCS5Padding(完全等效 PKCS7) 帮你填坑！
+  const encryptedB64 = aesEncryptSync(
+    payloadB64,
+    CACHE_KEY_AES_KEY,
+    '', // ECB 不需要 iv
+    AES_MODE.ECB_128_NoPadding,
+  )
+
+  return encryptedB64
+}

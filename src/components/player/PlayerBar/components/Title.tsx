@@ -7,6 +7,7 @@ import { useTheme } from '@/store/theme/hook'
 import commonState from '@/store/common/state'
 import playerState from '@/store/player/state'
 import Text from '@/components/common/Text'
+import PlaySourceBadge from '@/components/player/PlaySourceBadge'
 import { LIST_IDS } from '@/config/constant'
 import { createStyle } from '@/utils/tools'
 
@@ -40,7 +41,8 @@ export default ({ isHome }: { isHome: boolean }) => {
   // console.log(playMusicInfo)
   return (
     <TouchableOpacity style={styles.container} onLongPress={handleLongPress} onPress={handlePress} activeOpacity={0.7} >
-      <Text color={theme['c-font-label']} numberOfLines={1}>{title}</Text>
+      <Text style={styles.title} color={theme['c-font-label']} numberOfLines={1}>{title}</Text>
+      <PlaySourceBadge />
     </TouchableOpacity>
   )
 }
@@ -69,8 +71,15 @@ const styles = createStyle({
   container: {
     width: '100%',
     paddingHorizontal: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
     // paddingBottom: 4,
     // height: '50%',
     // backgroundColor: 'rgba(0, 0, 0, .1)',
+  },
+  title: {
+    minWidth: 0,
+    flexGrow: 0,
+    flexShrink: 1,
   },
 })

@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import OnlineList, { type OnlineListType, type OnlineListProps } from '@/components/OnlineList'
 import { clearListDetail, getListDetail, setListDetail, setListDetailInfo } from '@/core/leaderboard'
-import boardState from '@/store/leaderboard/state'
+import boardState, { type Source } from '@/store/leaderboard/state'
 import { handlePlay } from './listAction'
 
 // export type MusicListProps = Pick<OnlineListProps,
@@ -11,7 +11,7 @@ import { handlePlay } from './listAction'
 // >
 
 export interface MusicListType {
-  loadList: (source: LX.OnlineSource, listId: string) => void
+  loadList: (source: Source, listId: string) => void
   handleRefresh: () => void
 }
 

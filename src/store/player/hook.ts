@@ -41,6 +41,22 @@ export const usePlayInfo = () => {
   return value
 }
 
+export const usePlayQueue = () => {
+  const [value, update] = useState<LX.Player.PlayQueueInfo>({
+    list: state.playQueue,
+    index: state.playQueueIndex,
+  })
+
+  useEffect(() => {
+    global.state_event.on('playQueueChanged', update)
+    return () => {
+      global.state_event.off('playQueueChanged', update)
+    }
+  }, [])
+
+  return value
+}
+
 export const useStatusText = () => {
   const [value, update] = useState(state.statusText)
 
@@ -48,6 +64,19 @@ export const useStatusText = () => {
     global.state_event.on('playStateTextChanged', update)
     return () => {
       global.state_event.off('playStateTextChanged', update)
+    }
+  }, [])
+
+  return value
+}
+
+export const usePlaybackSource = () => {
+  const [value, update] = useState(state.playbackSource)
+
+  useEffect(() => {
+    global.state_event.on('playbackSourceChanged', update)
+    return () => {
+      global.state_event.off('playbackSourceChanged', update)
     }
   }, [])
 

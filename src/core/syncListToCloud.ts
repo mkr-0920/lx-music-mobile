@@ -1,13 +1,8 @@
-// [文件: src/core/syncListToCloud.ts]
-
 import { eapiRequest } from '@/utils/musicSdk/wy/utils/index'
 import { getListMusics } from '@/core/list'
 import { toast } from '@/utils/tools'
 import settingState from '@/store/setting/state'
 
-/**
- * 定义接口返回结构
- */
 interface EapiResponse {
   body: {
     code: number
@@ -16,39 +11,22 @@ interface EapiResponse {
     playlist?: {
       trackIds: Array<{ id: number | string }>
     }
-    [key: string]: any
   }
 }
 
-/**
- * 辅助函数：解析歌单 ID
- */
 const parsePlaylistId = (input: string): string => {
   if (!input) return ''
   const match = input.match(/[?&]id=(\d+)/)
-  if (match) {
-    return match[1]
-  }
-  return input
+  return match?.[1] ?? input
 }
 
-/**
- * 构造带有 Cookie 的请求选项
- */
-const getRequestOptions = () => {
-  const wyCookie = settingState.setting['common.wyCookie']
-  if (!wyCookie) return 'mobile'
-  return {
-    mobile: true,
-    headers: {
-      Cookie: wyCookie,
-    },
-  }
-}
+const getRequestOptions = () => ({
+  mobile: true,
+  headers: {
+    Cookie: settingState.setting['common.wyCookie'],
+  },
+})
 
-/**
- * 获取网易云歌单详情
- */
 const getRemotePlaylistTracks = async(playlistId: string): Promise<Set<string>> => {
   const request = eapiRequest(
     '/api/v6/playlist/detail',
@@ -61,113 +39,71 @@ const getRemotePlaylistTracks = async(playlistId: string): Promise<Set<string>> 
     },
     getRequestOptions(),
   ) as any
-
   const { body } = await request.promise as EapiResponse
-
-  if (body.code !== 200) {
-    throw new Error(`${body.message ?? body.msg ?? `获取远程歌单失败 (Code: ${body.code})`}`)
-  }
-
-  const trackIds = body.playlist?.trackIds ?? []
-  return new Set(trackIds.map((t: { id: number | string }) => String(t.id)))
+  if (body.code !== 200) throw new Error(body.message ?? body.msg ?? `获取远端歌单失败 (Code: ${body.code})`)
+  return new Set((body.playlist?.trackIds ?? []).map(item => String(item.id)))
 }
 
-/**
- * 操作歌单
- */
 const manipulateTracks = async(op: 'add' | 'del' | 'update', playlistId: string, songIds: string[]) => {
-  let trackIdsStr = ''
-  if (op === 'update') {
-    trackIdsStr = `[${songIds.join(',')}]`
-  } else {
-    trackIdsStr = JSON.stringify(songIds)
-  }
-
+  const trackIds = op == 'update' ? `[${songIds.join(',')}]` : JSON.stringify(songIds)
   const request = eapiRequest(
     '/api/playlist/manipulate/tracks',
     {
       pid: playlistId,
-      trackIds: trackIdsStr,
+      trackIds,
       op,
       header: '{}',
       e_r: true,
     },
     getRequestOptions(),
   ) as any
-
   const { body } = await request.promise as EapiResponse
-
-  if (body.code !== 200 && body.code !== 502) {
-    throw new Error(`${body.message ?? body.msg ?? `操作 ${op} 失败`}`)
-  }
-  return body
+  if (body.code !== 200 && body.code !== 502) throw new Error(body.message ?? body.msg ?? `操作 ${op} 失败`)
 }
 
-/**
- * 同步本地列表到网易云 (主入口)
- */
-export default async(listInfo: LX.List.UserListInfo) => {
+export default async(listInfo: LX.List.UserListInfo): Promise<boolean> => {
   if (!listInfo.sourceListId || listInfo.source !== 'wy') {
-    toast('此列表未绑定网易云歌单ID，无法同步')
-    return
+    toast('此列表未绑定网易云歌单 ID，无法同步')
+    return false
   }
-
-  const wyCookie = settingState.setting['common.wyCookie']
-  if (!wyCookie) {
+  if (!settingState.setting['common.wyCookie']) {
     toast('请先在设置-基本设置中填写网易云 Cookie')
-    return
+    return false
   }
-
   const playlistId = parsePlaylistId(listInfo.sourceListId)
-  if (!playlistId) {
-    toast('无效的歌单 ID')
-    return
+  if (!/^\d+$/.test(playlistId)) {
+    toast('无效的网易云歌单 ID')
+    return false
   }
-
-  toast(`开始同步: ${listInfo.name}`)
-  console.log(`[Sync] 开始同步列表 "${listInfo.name}" (ID: ${playlistId}) ...`)
 
   try {
     const localMusics = await getListMusics(listInfo.id)
-    const targetSongIds: string[] = []
+    const unsupportedMusics = localMusics.filter(musicInfo => musicInfo.source !== 'wy')
+    if (unsupportedMusics.length) {
+      toast(`有 ${unsupportedMusics.length} 首歌曲不是网易云来源，请先换源后再同步`)
+      return false
+    }
+    const targetSongIds = localMusics.map(musicInfo => String(musicInfo.id).replace(/^wy_/, ''))
+    if (targetSongIds.some(id => !/^\d+$/.test(id))) {
+      toast('部分歌曲缺少有效的网易云歌曲 ID，请先换源后再同步')
+      return false
+    }
 
-    localMusics.forEach(m => {
-      if (m.source === 'wy' && m.id) {
-        const rawId = String(m.id).replace(/^wy_/, '')
-        if (/^\d+$/.test(rawId)) {
-          targetSongIds.push(rawId)
-        }
-      }
-    })
-
-    const currentSongIdSet = await getRemotePlaylistTracks(playlistId)
+    toast(`开始同步：${listInfo.name}`)
+    const currentSongIds = await getRemotePlaylistTracks(playlistId)
     const targetSongIdSet = new Set(targetSongIds)
+    const toAdd = targetSongIds.filter(id => !currentSongIds.has(id))
+    const toDel = Array.from(currentSongIds).filter(id => !targetSongIdSet.has(id))
 
-    const toAdd = targetSongIds.filter(id => !currentSongIdSet.has(id))
-    const toDel = Array.from(currentSongIdSet).filter(id => !targetSongIdSet.has(id))
+    if (toDel.length) await manipulateTracks('del', playlistId, toDel)
+    if (toAdd.length) await manipulateTracks('add', playlistId, toAdd)
+    if (targetSongIds.length) await manipulateTracks('update', playlistId, targetSongIds)
 
-    console.log(`[Sync] 差异计算: 新增 ${toAdd.length} 首, 删除 ${toDel.length} 首`)
-
-    if (toDel.length > 0) {
-      console.log(`[Sync] 正在删除 ${toDel.length} 首歌曲...`)
-      await manipulateTracks('del', playlistId, toDel)
-    }
-
-    if (toAdd.length > 0) {
-      console.log(`[Sync] 正在添加 ${toAdd.length} 首歌曲...`)
-      await manipulateTracks('add', playlistId, toAdd)
-    }
-
-    if (targetSongIds.length > 0) {
-      console.log('[Sync] 正在更新歌单顺序...')
-      await manipulateTracks('update', playlistId, targetSongIds)
-    }
-
-    console.log('[Sync] 同步完成')
     toast('同步至网易云成功！')
-  } catch (err: any) {
-    console.error('[Sync] 同步失败:', err)
-    const errMsg = err.message ?? '未知错误'
-    toast(`同步失败: ${errMsg}`)
+    return true
+  } catch (error: any) {
+    console.error('[Sync] Failed to sync NetEase playlist:', error)
+    toast(`同步失败：${error.message ?? '未知错误'}`)
+    return false
   }
 }

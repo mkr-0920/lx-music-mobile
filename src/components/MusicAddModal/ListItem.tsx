@@ -5,10 +5,13 @@ import { BorderWidths } from '@/theme'
 import { createStyle, toast } from '@/utils/tools'
 import { useTheme } from '@/store/theme/hook'
 import { useMusicExistsList } from '@/store/list/hook'
+import { type WyRemoteTarget } from '@/core/wyRemoteDraft'
+
+type TargetList = LX.List.MyListInfo | WyRemoteTarget
 
 export default ({ listInfo, onPress, musicInfo, width }: {
-  listInfo: LX.List.MyListInfo
-  onPress: (listInfo: LX.List.MyListInfo) => void
+  listInfo: TargetList
+  onPress: (listInfo: TargetList) => void
   musicInfo: LX.Music.MusicInfo
   width: number
 }) => {

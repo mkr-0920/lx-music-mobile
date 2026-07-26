@@ -6,6 +6,7 @@ import List from './List'
 import { useI18n } from '@/lang'
 import { addListMusics, moveListMusics } from '@/core/list'
 import settingState from '@/store/setting/state'
+import { resolveWyRemoteTarget, type WyRemoteTarget } from '@/core/wyRemoteDraft'
 
 export interface SelectInfo {
   musicInfo: LX.Music.MusicInfo | null
@@ -48,28 +49,22 @@ export default forwardRef<MusicAddModalType, MusicAddModalProps>(({ onAdded }, r
     })
   }
 
-  const handleSelect = (listInfo: LX.List.MyListInfo) => {
+  const handleSelect = async(listInfo: LX.List.MyListInfo | WyRemoteTarget) => {
     dialogRef.current?.setVisible(false)
-    if (selectInfo.isMove) {
-      void moveListMusics(selectInfo.listId, listInfo.id,
-        [selectInfo.musicInfo!],
-        settingState.setting['list.addMusicLocationType'],
-      ).then(() => {
-        onAdded?.()
+    try {
+      let targetId = listInfo.id
+      const remoteTarget = listInfo as WyRemoteTarget
+      if (remoteTarget.remoteBoardId) targetId = (await resolveWyRemoteTarget(remoteTarget)).id
+      if (selectInfo.isMove) {
+        await moveListMusics(selectInfo.listId, targetId, [selectInfo.musicInfo!], settingState.setting['list.addMusicLocationType'])
         toast(t('list_edit_action_tip_move_success'))
-      }).catch(() => {
-        toast(t('list_edit_action_tip_move_failed'))
-      })
-    } else {
-      void addListMusics(listInfo.id,
-        [selectInfo.musicInfo!],
-        settingState.setting['list.addMusicLocationType'],
-      ).then(() => {
-        onAdded?.()
+      } else {
+        await addListMusics(targetId, [selectInfo.musicInfo!], settingState.setting['list.addMusicLocationType'])
         toast(t('list_edit_action_tip_add_success'))
-      }).catch(() => {
-        toast(t('list_edit_action_tip_add_failed'))
-      })
+      }
+      onAdded?.()
+    } catch {
+      toast(t(selectInfo.isMove ? 'list_edit_action_tip_move_failed' : 'list_edit_action_tip_add_failed'))
     }
   }
 

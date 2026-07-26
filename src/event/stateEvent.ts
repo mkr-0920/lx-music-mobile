@@ -60,6 +60,10 @@ export class StateEvent extends Event {
     this.emit('playStateTextChanged', text)
   }
 
+  playbackSourceChanged(source: PlayerState['playbackSource']) {
+    this.emit('playbackSourceChanged', source)
+  }
+
   playStateChanged(state: PlayerState['isPlay']) {
     this.emit('playStateChanged', state)
   }
@@ -74,6 +78,10 @@ export class StateEvent extends Event {
 
   playTempPlayListChanged(tempPlayList: PlayerState['tempPlayList']) {
     this.emit('playTempPlayListChanged', tempPlayList)
+  }
+
+  playQueueChanged(queueInfo: LX.Player.PlayQueueInfo) {
+    this.emit('playQueueChanged', queueInfo)
   }
 
   /**

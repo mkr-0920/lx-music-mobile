@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { TouchableOpacity } from 'react-native'
 
 import { Icon } from '@/components/common/Icon'
@@ -13,6 +13,14 @@ import Text from '@/components/common/Text'
 import { LIST_IDS } from '@/config/constant'
 import Loading from '@/components/common/Loading'
 import { useSettingValue } from '@/store/setting/hook'
+import { getWyRemoteDraftByListId, isWyRemoteDraftDirty, type WyRemoteTarget } from '@/core/wyRemoteDraft'
+import WyRemoteMenu, { type WyRemoteMenuType } from '../WyRemoteMenu'
+import {
+  playWyRemoteTarget,
+  refreshWyRemoteTarget,
+  saveWyRemoteTargetAsLocal,
+  syncWyRemoteTarget,
+} from '../wyRemoteActions'
 
 export interface ActiveListProps {
   onShowSearchBar: () => void
@@ -27,6 +35,18 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
   const currentListId = useActiveListId()
   const fetching = useListFetching(currentListId)
   const langId = useSettingValue('common.langId')
+  const moreButtonRef = useRef<TouchableOpacity>(null)
+  const wyRemoteMenuRef = useRef<WyRemoteMenuType>(null)
+  const [remoteDirty, setRemoteDirty] = useState(false)
+  const remoteTarget = useMemo<WyRemoteTarget | null>(() => {
+    const draft = getWyRemoteDraftByListId(currentListId)
+    if (!draft?.sourceListId) return null
+    return {
+      ...draft,
+      remoteBoardId: `mkr__${draft.sourceListId}`,
+      remoteName: draft.name,
+    }
+  }, [currentListId])
   const currentListName = useMemo(() => {
     switch (currentListId) {
       case LIST_IDS.TEMP:
@@ -58,15 +78,59 @@ export default forwardRef<ActiveListType, ActiveListProps>(({ onShowSearchBar, o
     })
   }, [])
 
+  useEffect(() => {
+    if (!remoteTarget) {
+      setRemoteDirty(false)
+      return
+    }
+    const updateDirty = () => {
+      void isWyRemoteDraftDirty(remoteTarget.remoteBoardId).then(setRemoteDirty).catch(() => { setRemoteDirty(false) })
+    }
+    const handleListUpdate = (ids: string[]) => {
+      if (ids.includes(remoteTarget.id)) updateDirty()
+    }
+    updateDirty()
+    global.app_event.on('myListMusicUpdate', handleListUpdate)
+    return () => {
+      global.app_event.off('myListMusicUpdate', handleListUpdate)
+    }
+  }, [remoteTarget])
+
+  const showRemoteMenu = () => {
+    if (!remoteTarget) return
+    moreButtonRef.current?.measure((fx, fy, width, height, px, py) => {
+      wyRemoteMenuRef.current?.show({ item: remoteTarget, dirty: remoteDirty }, {
+        x: Math.ceil(px),
+        y: Math.ceil(py),
+        w: Math.ceil(width),
+        h: Math.ceil(height),
+      })
+    })
+  }
+
   return (
-    <TouchableOpacity onPress={showList} onLongPress={onScrollToTop} style={{ ...styles.currentList, opacity: visibleBar ? 1 : 0, borderBottomColor: theme['c-border-background'] }}>
-      <Icon style={styles.currentListIcon} color={theme['c-button-font']} name="chevron-right" size={12} />
-      { fetching ? <Loading color={theme['c-button-font']} style={styles.loading} /> : null }
-      <Text style={styles.currentListText} numberOfLines={1} color={theme['c-button-font']}>{currentListName}</Text>
-      <TouchableOpacity style={styles.currentListBtns} onPress={onShowSearchBar}>
-        <Icon color={theme['c-button-font']} name="search-2" />
+    <>
+      <TouchableOpacity onPress={showList} onLongPress={onScrollToTop} style={{ ...styles.currentList, opacity: visibleBar ? 1 : 0, borderBottomColor: theme['c-border-background'] }}>
+        <Icon style={styles.currentListIcon} color={theme['c-button-font']} name="chevron-right" size={12} />
+        { fetching ? <Loading color={theme['c-button-font']} style={styles.loading} /> : null }
+        <Text style={styles.currentListText} numberOfLines={1} color={theme['c-button-font']}>{currentListName}</Text>
+        {remoteDirty ? <TouchableOpacity style={styles.dirtyStatus} onPress={showRemoteMenu}><Text size={12} color={theme['c-primary-font']}>{global.i18n.t('my_list__wy_unsynced')}</Text></TouchableOpacity> : null}
+        <TouchableOpacity style={styles.currentListBtns} onPress={onShowSearchBar}>
+          <Icon color={theme['c-button-font']} name="search-2" />
+        </TouchableOpacity>
+        {remoteTarget
+          ? <TouchableOpacity ref={moreButtonRef} style={styles.currentListBtns} onPress={showRemoteMenu}><Icon color={theme['c-button-font']} name="dots-vertical" /></TouchableOpacity>
+          : null}
       </TouchableOpacity>
-    </TouchableOpacity>
+      <WyRemoteMenu
+        ref={wyRemoteMenuRef}
+        onPlay={item => { void playWyRemoteTarget(item) }}
+        onRefresh={item => { void refreshWyRemoteTarget(item) }}
+        onDiscard={item => { void refreshWyRemoteTarget(item, true) }}
+        onSync={item => { void syncWyRemoteTarget(item) }}
+        onSaveAsLocal={item => { void saveWyRemoteTargetAsLocal(item) }}
+      />
+    </>
   )
 })
 
@@ -103,5 +167,11 @@ const styles = createStyle({
     alignItems: 'center',
     height: '100%',
     // backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  dirtyStatus: {
+    height: '100%',
+    justifyContent: 'center',
+    paddingLeft: 5,
+    paddingRight: 5,
   },
 })

@@ -5,6 +5,7 @@ import {
   HOME_SCREEN,
   PLAY_DETAIL_SCREEN,
   SONGLIST_DETAIL_SCREEN,
+  ARTIST_DETAIL_SCREEN,
   COMMENT_SCREEN,
   // SETTING_SCREEN,
 } from './screenNames'
@@ -14,6 +15,22 @@ import { NAV_SHEAR_NATIVE_IDS } from '@/config/constant'
 import { getStatusBarStyle } from './utils'
 import { windowSizeTools } from '@/utils/windowSizeTools'
 import { type ListInfoItem } from '@/store/songlist/state'
+
+export function pushArtistDetailScreen(componentId: string, artist: { id: string, name: string, img: string }) {
+  const theme = themeState.theme
+  void Navigation.push(componentId, {
+    component: {
+      name: ARTIST_DETAIL_SCREEN,
+      passProps: { artist },
+      options: {
+        topBar: { visible: false, height: 0 },
+        statusBar: { drawBehind: true, visible: true, style: getStatusBarStyle(theme.isDark), backgroundColor: 'transparent' },
+        navigationBar: { backgroundColor: theme['c-content-background'] },
+        layout: { componentBackgroundColor: theme['c-content-background'] },
+      },
+    },
+  })
+}
 
 // const store = getStore()
 // const getTheme = () => getter('common', 'theme')(store.getState())

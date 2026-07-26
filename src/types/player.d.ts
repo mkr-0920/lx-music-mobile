@@ -31,12 +31,25 @@ declare global {
         /**
           * 当前播放歌曲的列表 id
           */
-        listId: string
+        listId: string | null
         /**
           * 是否属于 “稍后播放”
           */
         isTempPlay: boolean
       }>
+
+      type PlayQueueItemOrigin = 'source' | 'play_next' | 'play_later'
+
+      type PlayQueueItem = Readonly<PlayMusicInfo & {
+        queueId: string
+        origin: PlayQueueItemOrigin
+        sourceIndex?: number
+      }>
+
+      interface PlayQueueInfo {
+        list: PlayQueueItem[]
+        index: number
+      }
 
       interface PlayInfo {
         /**
@@ -73,6 +86,20 @@ declare global {
         maxTime: number
         listId: string
         index: number
+      }
+
+      interface SavedPlayQueueItem {
+        origin: PlayQueueItemOrigin
+        listId: string | null
+        musicId: string
+        sourceIndex?: number
+        musicInfo?: PlayMusic
+      }
+
+      interface SavedPlayQueue {
+        playerListId: string | null
+        index: number
+        items: SavedPlayQueueItem[]
       }
 
       interface Track extends RNTrack {

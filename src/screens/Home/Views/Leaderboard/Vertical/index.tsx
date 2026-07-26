@@ -16,7 +16,7 @@ import settingState from '@/store/setting/state'
 import { getBoardsList } from '@/core/leaderboard'
 import { COMPONENT_IDS } from '@/config/constant'
 import { handleCollect, handlePlay } from '../listAction'
-import boardState from '@/store/leaderboard/state'
+import boardState, { type Source } from '@/store/leaderboard/state'
 
 
 const MAX_WIDTH = scaleSizeW(200)
@@ -28,10 +28,10 @@ export default () => {
   const isUnmountedRef = useRef(false)
   const boardsListRef = useRef<BoardsListType>(null)
   const headerBarRef = useRef<HeaderBarType>(null)
-  const boundInfo = useRef<{ source: LX.OnlineSource, id: string | null }>({ source: 'kw', id: null })
+  const boundInfo = useRef<{ source: Source, id: string | null }>({ source: 'kw', id: null })
   // const [width, setWidth] = useState(0)
 
-  const handleBoundChange = (source: LX.OnlineSource, id: string) => {
+  const handleBoundChange = (source: Source, id: string) => {
     musicListRef.current?.loadList(source, id)
     void saveLeaderboardSetting({
       source,
