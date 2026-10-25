@@ -1,121 +1,71 @@
-import { httpFetch } from '../../request'
 import { formatPlayTime, sizeFormate } from '../../index'
 import { formatSingerName } from '../utils'
-
-const NETWORK_RETRY_LIMIT = 5
-const NETWORK_RETRY_DELAY = 500
-
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+import { signRequest } from './utils'
 
 export default {
-  limit: 30,
+  limit: 50,
   total: 0,
   page: 0,
   allPage: 1,
   successCode: 0,
-  // musicSearch 函数负责发起 HTTP 请求
-  musicSearch(str, page, limit, retryNum = 0, mode = 'desktop', desktopReqCode = null) {
-    if (retryNum > NETWORK_RETRY_LIMIT) return Promise.reject(new Error('QQ音乐搜索网络请求失败'))
-
-    const isLite = mode == 'lite'
-
-    // 使用 httpFetch 发送 POST 请求
-    const searchRequest = httpFetch('https://u.y.qq.com/cgi-bin/musicu.fcg', {
-      method: 'post',
-      headers: {
-        'User-Agent': isLite
-          ? 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)'
-          : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
-        'Content-Type': 'application/json;charset=utf-8',
-        Accept: 'application/json, text/plain, */*',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
+  musicSearch(str, page, limit, retryNum = 0) {
+    if (retryNum > 5) return Promise.reject(new Error('搜索失败'))
+    const searchRequest = signRequest({
+      comm: {
+        _channelid: '0',
+        _os_version: '6.2.9200-2',
+        ct: '19',
+        cv: '2151',
+        guid: '1F70E520B2EAA7D25E11760783C53CA9',
+        patch: '118',
+        psrf_access_token_expiresAt: 0,
+        psrf_qqaccess_token: '',
+        psrf_qqopenid: '',
+        psrf_qqunionid: '',
+        tmeAppID: 'qqmusic',
+        tmeLoginType: 0,
+        uin: '0',
+        wid: '7223299733393904640',
       },
-      body: {
-        comm: isLite
-          ? {
-              ct: 11,
-              cv: '1003006',
-              v: '1003006',
-              os_ver: '12',
-              phonetype: '0',
-              devicelevel: '31',
-              tmeAppID: 'qqmusiclight',
-              nettype: 'NETWORK_WIFI',
-            }
-          : {
-              ct: '19',
-              cv: '1859',
-              uin: '0',
-            },
-        req: {
-          module: 'music.search.SearchCgiService',
-          method: isLite ? 'DoSearchForQQMusicLite' : 'DoSearchForQQMusicDesktop',
-          param: {
-            grp: 1,
-            query: str,
-            search_type: 0,
-            num_per_page: limit,
-            page_num: page,
-            ...(isLite ? { nqc_flag: 0 } : {}),
-          },
+      'music.search.SearchCgiService': {
+        module: 'music.search.SearchCgiService',
+        method: 'DoSearchForQQMusicDesktop',
+        param: {
+          grp: 1,
+          num_per_page: limit,
+          page_num: page,
+          query: str,
+          remoteplace: 'txt.newclient.top',
+          search_type: 0,
+          searchid: this.getSearchId(),
         },
       },
     })
-
-    // 处理请求的 Promise
-    return searchRequest.promise.then(({ body }) => {
-      console.log('[tx search response]', {
-        mode,
-        code: body?.code,
-        reqCode: body?.req?.code,
-        message: body?.req?.message ?? body?.message,
-        songCount: isLite
-          ? body?.req?.data?.body?.item_song?.length
-          : body?.req?.data?.body?.song?.list?.length,
-      })
-
-      const outerCode = body?.code
-      const reqCode = body?.req?.code
-      if (outerCode == this.successCode && reqCode == this.successCode) {
-        const data = body.req.data
-        return {
-          list: isLite ? data.body.item_song : data.body.song.list,
-          meta: data.meta,
-        }
+    return searchRequest.then(({ body }) => {
+      // console.log(body)
+      const req = body?.['music.search.SearchCgiService'] ?? body?.req
+      if (!req || body.code != this.successCode || req.code != this.successCode) {
+        return this.musicSearch(str, page, limit, ++retryNum)
       }
-
-      if (!isLite && reqCode == 2001) {
-        return this.musicSearch(str, page, limit, 0, 'lite', reqCode)
-      }
-
-      const codes = isLite
-        ? `Desktop req.code=${desktopReqCode ?? 'unknown'}, Lite req.code=${reqCode ?? 'unknown'}`
-        : `code=${outerCode ?? 'unknown'}, req.code=${reqCode ?? 'unknown'}`
-      const error = new Error(`QQ音乐搜索失败: ${codes}`)
-      error.isBusinessError = true
-      throw error
-    }).catch(async(err) => {
-      if (err.isBusinessError || err.isSearchTerminalError) throw err
-      if (retryNum >= NETWORK_RETRY_LIMIT) {
-        const error = new Error(`QQ音乐搜索网络请求失败: ${err.message}`)
-        error.isSearchTerminalError = true
-        throw error
-      }
-      await delay(NETWORK_RETRY_DELAY * (retryNum + 1))
-      return this.musicSearch(str, page, limit, retryNum + 1, mode, desktopReqCode)
+      return req.data
     })
   },
-  // handleResult 函数负责格式化原始数据
+  /**
+   * PC 客户端版 searchid：32 位大写十六进制 GUID + 5 位补零随机数 = 37 字符。
+   * 对应 QQ 音乐 PC 端 searchid 形状（服务端只需要唯一的会话 ID，形状一致即可）。
+   */
+  getSearchId() {
+    let guid = ''
+    for (let i = 0; i < 32; i++) guid += Math.floor(Math.random() * 16).toString(16)
+    return guid.toUpperCase() + String(Math.floor(Math.random() * 100000)).padStart(5, '0')
+  },
   handleResult(rawList) {
     // console.log(rawList)
+    if (!rawList || !Array.isArray(rawList)) return []
     const list = []
     rawList.forEach(item => {
-      // 过滤掉没有 media_mid 的无效歌曲
       if (!item.file?.media_mid) return
 
-      // 处理音质、文件大小的逻辑
       let types = []
       let _types = {}
       const file = item.file
@@ -147,29 +97,21 @@ export default {
           size,
         }
       }
-      if (file.size_new && file.size_new[0] !== 0) {
-        let size = sizeFormate(file.size_new[0])
-        types.push({ type: 'master', size })
-        _types.master = {
-          size,
-        }
-      }
-      // 处理专辑、歌手名的逻辑不变
+      // types.reverse()
       let albumId = ''
       let albumName = ''
       if (item.album) {
         albumName = item.album.name
         albumId = item.album.mid
       }
-
-      // 组装成标准音乐对象, 逻辑不变
       list.push({
         singer: formatSingerName(item.singer, 'name'),
-        name: item.name + (item.title_extra ?? ''),
+        // name: item.name + (item.title_extra ?? ''),
+        name: item.title,
         albumName,
         albumId,
         source: 'tx',
-        interval: formatPlayTime(item.interval),
+        interval: item.interval ? formatPlayTime(item.interval) : null,
         songId: item.id,
         albumMid: item.album?.mid ?? '',
         strMediaMid: item.file.media_mid,
@@ -185,14 +127,13 @@ export default {
     // console.log(list)
     return list
   },
-  // search 是最终导出的搜索方法
   search(str, page = 1, limit) {
     if (limit == null) limit = this.limit
-    // 调用 musicSearch 获取数据
-    return this.musicSearch(str, page, limit).then(({ list: rawList, meta }) => {
-      const list = this.handleResult(rawList)
-      // 处理分页和总数
-      this.total = meta.estimate_sum
+    // http://newlyric.kuwo.cn/newlyric.lrc?62355680
+    return this.musicSearch(str, page, limit).then(({ body, meta }) => {
+      let list = this.handleResult(body.song.list)
+
+      this.total = meta.sum
       this.page = page
       this.allPage = Math.ceil(this.total / limit)
 

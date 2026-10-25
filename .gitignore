@@ -68,3 +68,18 @@ buck-out/
 /coverage
 
 src/utils/musicSdk/mkr/config.js
+
+# Build artifacts
+index.android.bundle
+*.apk
+/res/
+
+# Editor/notes
+Structure.txt
+src/Structure.txt
+
+# Temp files
+src/utils/musicSdk/mkr/leaderboard_tmp.js
+
+# Local gradle mirror config (keep on disk, not in repo)
+android/gradle-mirrors.init.gradle

@@ -344,7 +344,15 @@ export const removeListMusics = async(ids: string[]): Promise<void> => {
   // delaySaveListScrollPosition(global.lx.listScrollPosition)
 }
 
-
+export const qualitys = ['128k', '320k', 'flac', 'flac24bit']
+export const hasMusicUrlByMusic = async(musicInfo: LX.Music.MusicInfo) => {
+  return getDataMultiple(qualitys.map(q => `${storageDataPrefix.musicUrl}${musicInfo.id}_${q}`)).then((urls) => {
+    return urls.some(([, url]) => !!url)
+  })
+}
+export const clearMusicUrlByMusic = async(musicInfo: LX.Music.MusicInfo) => {
+  await removeDataMultiple(qualitys.map(q => `${storageDataPrefix.musicUrl}${musicInfo.id}_${q}`))
+}
 export const getMusicUrl = async(musicInfo: LX.Music.MusicInfo, type: LX.Quality) => getData<string>(`${storageDataPrefix.musicUrl}${musicInfo.id}_${type}`).then((url) => url ?? '')
 export const saveMusicUrl = async(musicInfo: LX.Music.MusicInfo, type: LX.Quality, url: string) => saveData(`${storageDataPrefix.musicUrl}${musicInfo.id}_${type}`, url)
 export const clearMusicUrl = async(keys?: string[]) => {
@@ -511,6 +519,17 @@ export const removeSyncHostHistory = async(index: number) => {
 let userApis: LX.UserApi.UserApiInfo[] = []
 export const getUserApiList = async(): Promise<LX.UserApi.UserApiInfo[]> => {
   userApis = await getData<LX.UserApi.UserApiInfo[]>(userApiPrefix) ?? []
+
+  // 移除 1.7.1 及之前版本的脚本数据被意外存储到列表中的问题
+  let updated = false
+  for (const info of userApis) {
+    if ((info as LX.UserApi.UserApiInfo & { script?: string }).script != null) {
+      delete (info as LX.UserApi.UserApiInfo & { script?: string }).script
+      updated = true
+    }
+  }
+  if (updated) void saveData(userApiPrefix, userApis)
+
   return [...userApis]
 }
 export const getUserApiScript = async(id: string): Promise<string> => {
@@ -541,7 +560,7 @@ const matchInfo = (scriptInfo: string) => {
   for (const [key, len] of Object.entries(INFO_NAMES) as Array<{ [K in keyof INFO_NAMES_Type]: [K, INFO_NAMES_Type[K]] }[keyof INFO_NAMES_Type]>) {
     infos[key] ||= ''
     if (infos[key] == null) infos[key] = ''
-    else if (infos[key]!.length > len) infos[key] = infos[key]!.substring(0, len) + '...'
+    else if (infos[key].length > len) infos[key] = infos[key].substring(0, len) + '...'
   }
 
   return infos as Record<keyof typeof INFO_NAMES, string>
@@ -553,10 +572,9 @@ export const addUserApi = async(script: string): Promise<LX.UserApi.UserApiInfo>
   let scriptInfo = matchInfo(result[0])
 
   scriptInfo.name ||= `user_api_${new Date().toLocaleString()}`
-  const apiInfo = {
+  const apiInfo: LX.UserApi.UserApiInfo = {
     id: `user_api_${Math.random().toString().substring(2, 5)}_${Date.now()}`,
     ...scriptInfo,
-    script,
     allowShowUpdateAlert: true,
   }
   userApis.push(apiInfo)
