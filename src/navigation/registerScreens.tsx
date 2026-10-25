@@ -8,6 +8,7 @@ import {
   SonglistDetail,
   Comment,
   ArtistDetail,
+  Wiki,
   // Setting,
 } from '@/screens'
 import { Provider } from '@/store/Provider'
@@ -17,6 +18,7 @@ import {
   PLAY_DETAIL_SCREEN,
   SONGLIST_DETAIL_SCREEN,
   COMMENT_SCREEN,
+  WIKI_SCREEN,
   ARTIST_DETAIL_SCREEN,
   VERSION_MODAL,
   PACT_MODAL,
@@ -48,6 +50,7 @@ export default () => {
   Navigation.registerComponent(PLAY_DETAIL_SCREEN, () => WrappedComponent(PlayDetail))
   Navigation.registerComponent(SONGLIST_DETAIL_SCREEN, () => WrappedComponent(SonglistDetail))
   Navigation.registerComponent(COMMENT_SCREEN, () => WrappedComponent(Comment))
+  Navigation.registerComponent(WIKI_SCREEN, () => WrappedComponent(Wiki))
   Navigation.registerComponent(ARTIST_DETAIL_SCREEN, () => WrappedComponent(ArtistDetail))
   Navigation.registerComponent(VERSION_MODAL, () => WrappedComponent(VersionModal))
   Navigation.registerComponent(PACT_MODAL, () => WrappedComponent(PactModal))
