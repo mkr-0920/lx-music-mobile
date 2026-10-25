@@ -62,6 +62,11 @@ declare global {
       'common.homePageScroll': boolean
 
       /**
+       * 允许通过底栏进度条调整进度
+       */
+      'common.allowProgressBarSeek': boolean
+
+      /**
        * 是否显示返回按钮
        */
       'common.showBackBtn': boolean
@@ -147,7 +152,7 @@ declare global {
       'player.playbackRate': number
 
       /**
-       * 缓存大小设置 unit MB
+       * 缓存大小设置 unit MiB
        */
       'player.cacheSize': string
 
@@ -200,6 +205,11 @@ declare global {
        * 是否启用蓝牙歌词
        */
       'player.isShowBluetoothLyric': boolean
+
+      /**
+       * 是否启用蓝牙完整歌词
+       */
+      'player.isShowBluetoothFullLyric': boolean
 
       /**
        * 播放详情页-是否缩放当前播放的歌词行

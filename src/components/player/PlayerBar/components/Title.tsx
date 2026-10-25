@@ -9,7 +9,7 @@ import playerState from '@/store/player/state'
 import Text from '@/components/common/Text'
 import PlaySourceBadge from '@/components/player/PlaySourceBadge'
 import { LIST_IDS } from '@/config/constant'
-import { createStyle } from '@/utils/tools'
+import { createStyle, formatMusicName } from '@/utils/tools'
 
 
 export default ({ isHome }: { isHome: boolean }) => {
@@ -35,7 +35,7 @@ export default ({ isHome }: { isHome: boolean }) => {
 
   const title = musicInfo.id
     ? musicInfo.singer
-      ? downloadFileName.replace('歌手', musicInfo.singer).replace('歌名', musicInfo.name)
+      ? formatMusicName(downloadFileName, musicInfo.name, musicInfo.singer)
       : musicInfo.name
     : ''
   // console.log(playMusicInfo)

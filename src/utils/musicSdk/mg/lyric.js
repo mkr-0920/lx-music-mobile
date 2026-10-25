@@ -21,7 +21,7 @@ const mrcTools = {
 
       const startTime = parseInt(result[1])
       let time = startTime
-      let ms = time % 1000
+      let ms = (time % 1000).toString().padStart(3, '0')
       time /= 1000
       let m = parseInt(time / 60).toString().padStart(2, '0')
       time %= 60
@@ -36,7 +36,7 @@ const mrcTools = {
       if (!times) continue
       times = times.map(time => {
         const result = /\((\d+),(\d+)\)/.exec(time)
-        return `<${parseInt(result[1]) - startTime},${result[2]}>`
+        return `<${Math.trunc(parseInt(result[1]) - startTime)},${result[2]}>`
       })
       const wordArr = words.split(this.rxps.wordTime)
       const newWords = times.map((time, index) => `${time}${wordArr[index]}`).join('')
@@ -75,7 +75,7 @@ const mrcTools = {
   },
   async getMusicInfo(songInfo) {
     return songInfo.mrcUrl == null
-      ? getMusicInfo(songInfo.copyrightId)
+      ? getMusicInfo(songInfo.songmid)
       : songInfo
   },
   getLyric(songInfo) {
@@ -96,52 +96,8 @@ const mrcTools = {
 }
 
 export default {
-  getLyricWeb(songInfo, tryNum = 0) {
-    // console.log(songInfo.copyrightId)
-    if (songInfo.lrcUrl) {
-      let requestObj = httpFetch(songInfo.lrcUrl)
-      requestObj.promise = requestObj.promise.then(({ body, statusCode }) => {
-        if (statusCode !== 200) {
-          if (tryNum > 5) return Promise.reject(new Error('歌词获取失败'))
-          let tryRequestObj = this.getLyricWeb(songInfo, ++tryNum)
-          requestObj.cancelHttp = tryRequestObj.cancelHttp.bind(tryRequestObj)
-          return tryRequestObj.promise
-        }
-        return {
-          lyric: body,
-          tlyric: '',
-        }
-      })
-      return requestObj
-    } else {
-      let requestObj = httpFetch(`https://music.migu.cn/v3/api/music/audioPlayer/getLyric?copyrightId=${songInfo.copyrightId}`, {
-        headers: {
-          Referer: 'https://music.migu.cn/v3/music/player/audio?from=migu',
-        },
-      })
-      requestObj.promise = requestObj.promise.then(({ body }) => {
-        if (body.returnCode !== '000000' || !body.lyric) {
-          if (tryNum > 5) return Promise.reject(new Error('Get lyric failed'))
-          let tryRequestObj = this.getLyricWeb(songInfo, ++tryNum)
-          requestObj.cancelHttp = tryRequestObj.cancelHttp.bind(tryRequestObj)
-          return tryRequestObj.promise
-        }
-        return {
-          lyric: body.lyric,
-          tlyric: '',
-        }
-      })
-      return requestObj
-    }
-  },
-
   getLyric(songInfo) {
     let requestObj = mrcTools.getLyric(songInfo)
-    requestObj.promise = requestObj.promise.catch(() => {
-      let webRequestObj = this.getLyricWeb(songInfo)
-      requestObj.cancelHttp = webRequestObj.cancelHttp.bind(webRequestObj)
-      return webRequestObj.promise
-    })
     return requestObj
   },
 }
